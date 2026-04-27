@@ -1,12 +1,35 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 
-// Initialize Gemini with the API key from environment variables
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-// Replace this with your actual Google Apps Script Web App URL
-const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || ''; 
-const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
+// Fetch PDF directly from Google Drive (file must be shared "Anyone with the link")
+async function fetchPdfAsBase64(fileId: string): Promise<string | null> {
+  const driveUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
+    const response = await fetch(driveUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; USTED-Scholar/1.0)' },
+      redirect: 'follow',
+      cache: 'no-store',
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      console.error(`Drive returned HTML for fileId ${fileId} — file may not be public`);
+      return null;
+    }
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
+  } catch (e: any) {
+    clearTimeout(timeout);
+    console.error(`Drive fetch error:`, e?.message);
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,24 +37,15 @@ export async function POST(req: Request) {
     
     let pdfInlineData = null;
 
-    // 1. Bridge Logic: Fetch Base64 PDF from Apps Script
-    if (fileId && APPS_SCRIPT_URL) {
-      try {
-        const pdfResponse = await fetch(`${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`, {
-          next: { revalidate: 3600 } // Cache for 1 hour (Vercel-compatible)
-        });
-        const pdfJson = await pdfResponse.json();
-        
-        if (pdfJson.data) {
-          pdfInlineData = {
-            inlineData: {
-              data: pdfJson.data,
-              mimeType: "application/pdf"
-            }
-          };
-        }
-      } catch (e) {
-        console.error("Failed to fetch PDF from Apps Script:", e);
+    // 1. Fetch PDF directly from Google Drive
+    if (fileId) {
+      const base64Data = await fetchPdfAsBase64(fileId);
+      if (base64Data) {
+        pdfInlineData = {
+          inlineData: { data: base64Data, mimeType: "application/pdf" }
+        };
+      } else {
+        console.warn(`Could not load PDF for fileId: ${fileId}. Chat will proceed without PDF context.`);
       }
     }
 
