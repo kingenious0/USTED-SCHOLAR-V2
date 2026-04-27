@@ -1,6 +1,3 @@
 {
-  "buildCommand": "cd usted-scholar-app && npm install && npm run build",
-  "outputDirectory": "usted-scholar-app/.next",
-  "installCommand": "cd usted-scholar-app && npm install",
   "framework": "nextjs"
 }
