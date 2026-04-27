@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || '';
+const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const fileId = searchParams.get('fileId');
@@ -7,38 +10,35 @@ export async function GET(request: Request) {
   if (!fileId) {
     return new NextResponse('Missing fileId', { status: 400 });
   }
-
-  // Use APPS_SCRIPT_WEBAPP_URL from .env.local
-  const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || '';
-  const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
-
   if (!APPS_SCRIPT_URL) {
     return new NextResponse('Missing Apps Script URL configuration', { status: 500 });
   }
 
   try {
-    const url = `${APPS_SCRIPT_URL}?fileId=${fileId}${APPS_SCRIPT_SECRET ? `&key=${APPS_SCRIPT_SECRET}` : ''}`;
-    const response = await fetch(url);
-    
+    const scriptUrl = `${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`;
+
+    // redirect:'follow' is the key fix — Google redirects script.google.com → script.googleusercontent.com
+    const response = await fetch(scriptUrl, {
+      redirect: 'follow',
+      headers: { 'Accept': 'text/plain' },
+    });
+
     if (!response.ok) {
-      return new NextResponse(`Failed to fetch from Apps Script: ${response.status}`, { status: response.status });
+      const errText = await response.text();
+      console.error(`Apps Script HTTP ${response.status}:`, errText.slice(0, 300));
+      return new NextResponse(`Bridge Error ${response.status}`, { status: 500 });
     }
 
-    const data = await response.json();
+    // Apps Script returns raw Base64 text (not JSON)
+    const base64Data = await response.text();
 
-    if (data.error) {
-       console.error("Apps Script Error:", data.error);
-       return new NextResponse(data.error, { status: 401 });
+    if (!base64Data || base64Data.startsWith('Error') || base64Data.includes('<!doctype')) {
+      console.error('Apps Script returned invalid data:', base64Data.slice(0, 300));
+      return new NextResponse('Bridge returned invalid data', { status: 500 });
     }
 
-    if (!data.data) {
-      return new NextResponse('Invalid response from Apps Script: no base64 data', { status: 500 });
-    }
-
-    // Convert base64 to binary buffer
-    const buffer = Buffer.from(data.data, 'base64');
-
-    // Return as PDF
+    // Convert base64 → binary → return as PDF
+    const buffer = Buffer.from(base64Data.trim(), 'base64');
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error("PDF Proxy Error:", error);
+    console.error('PDF Proxy Error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

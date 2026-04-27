@@ -3,42 +3,41 @@ import { NextResponse } from 'next/server';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-// Fetch PDF directly from Google Drive (file must be shared "Anyone with the link")
-async function fetchPdfAsBase64(fileId: string): Promise<string | null> {
-  // Direct download URL for publicly shared Google Drive files
-  const driveUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || '';
+const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+// Shared helper: fetch Base64 PDF from Apps Script with redirect:follow
+async function fetchPdfBase64(fileId: string): Promise<string | null> {
+  if (!APPS_SCRIPT_URL) {
+    console.error('APPS_SCRIPT_WEBAPP_URL is not set');
+    return null;
+  }
+
+  const scriptUrl = `${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`;
 
   try {
-    const response = await fetch(driveUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; USTED-Scholar/1.0)',
-      },
+    // redirect:'follow' jumps past Google's script.google.com → script.googleusercontent.com redirect
+    const response = await fetch(scriptUrl, {
       redirect: 'follow',
-      cache: 'no-store',
+      headers: { 'Accept': 'text/plain' },
     });
-    clearTimeout(timeout);
 
     if (!response.ok) {
-      console.error(`Drive fetch failed: HTTP ${response.status} for fileId ${fileId}`);
+      console.error(`Apps Script HTTP ${response.status} for fileId ${fileId}`);
       return null;
     }
 
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('text/html')) {
-      console.error(`Drive returned HTML for fileId ${fileId} — file may not be public`);
+    // Apps Script returns raw Base64 text (not JSON)
+    const base64Data = await response.text();
+
+    if (!base64Data || base64Data.startsWith('Error') || base64Data.includes('<!doctype')) {
+      console.error('Apps Script returned invalid data:', base64Data.slice(0, 200));
       return null;
     }
 
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString('base64');
-
+    return base64Data.trim();
   } catch (e: any) {
-    clearTimeout(timeout);
-    console.error(`Drive fetch error for fileId ${fileId}:`, e?.message);
+    console.error('fetchPdfBase64 error:', e?.message);
     return null;
   }
 }
@@ -51,13 +50,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing fileId' }, { status: 400 });
     }
 
-    const activePrompt = prompt || `Analyze this lecture material. Create a "Study Dashboard" including: 1. A high-level Executive Summary, 2. A list of Key Definitions, 3. 5 Essential Takeaways, and 4. A "Why this matters" section.`;
+    const activePrompt = prompt || `Analyze this lecture material. Create a "Study Dashboard" including:
+1. A high-level Executive Summary
+2. A list of Key Definitions  
+3. 5 Essential Takeaways
+4. A "Why this matters" section.`;
 
-    const base64Data = await fetchPdfAsBase64(fileId);
+    const base64Data = await fetchPdfBase64(fileId);
 
     if (!base64Data) {
-      return NextResponse.json({ 
-        error: 'Could not load PDF. Ensure the Google Drive file is shared as "Anyone with the link".' 
+      return NextResponse.json({
+        error: 'Failed to fetch course material. Check that APPS_SCRIPT_WEBAPP_URL is set on Vercel and the Apps Script is deployed as "Anyone".'
       }, { status: 500 });
     }
 

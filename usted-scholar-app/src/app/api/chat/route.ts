@@ -3,30 +3,34 @@ import { NextResponse } from 'next/server';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-// Fetch PDF directly from Google Drive (file must be shared "Anyone with the link")
-async function fetchPdfAsBase64(fileId: string): Promise<string | null> {
-  const driveUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || '';
+const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
+
+// Fetch Base64 PDF from Apps Script with redirect:follow
+async function fetchPdfBase64(fileId: string): Promise<string | null> {
+  if (!APPS_SCRIPT_URL) return null;
+
+  const scriptUrl = `${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`;
+
   try {
-    const response = await fetch(driveUrl, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; USTED-Scholar/1.0)' },
+    // redirect:'follow' is the key fix — handles Google's internal redirect chain
+    const response = await fetch(scriptUrl, {
       redirect: 'follow',
-      cache: 'no-store',
+      headers: { 'Accept': 'text/plain' },
     });
-    clearTimeout(timeout);
+
     if (!response.ok) return null;
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('text/html')) {
-      console.error(`Drive returned HTML for fileId ${fileId} — file may not be public`);
+
+    const base64Data = await response.text();
+
+    if (!base64Data || base64Data.startsWith('Error') || base64Data.includes('<!doctype')) {
+      console.warn('Apps Script returned invalid data for chat:', base64Data.slice(0, 100));
       return null;
     }
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString('base64');
+
+    return base64Data.trim();
   } catch (e: any) {
-    clearTimeout(timeout);
-    console.error(`Drive fetch error:`, e?.message);
+    console.error('Chat PDF fetch error:', e?.message);
     return null;
   }
 }
@@ -34,62 +38,56 @@ async function fetchPdfAsBase64(fileId: string): Promise<string | null> {
 export async function POST(req: Request) {
   try {
     const { message, history, fileId } = await req.json();
-    
+
     let pdfInlineData = null;
 
-    // 1. Fetch PDF directly from Google Drive
+    // Fetch PDF if fileId provided — chat works with or without PDF context
     if (fileId) {
-      const base64Data = await fetchPdfAsBase64(fileId);
+      const base64Data = await fetchPdfBase64(fileId);
       if (base64Data) {
         pdfInlineData = {
-          inlineData: { data: base64Data, mimeType: "application/pdf" }
+          inlineData: { data: base64Data, mimeType: 'application/pdf' }
         };
       } else {
-        console.warn(`Could not load PDF for fileId: ${fileId}. Chat will proceed without PDF context.`);
+        console.warn(`PDF unavailable for fileId ${fileId} — chat continues without context`);
       }
     }
 
-    // 2. Format history for Gemini
+    // Format conversation history for Gemini
     const contents = history.map((msg: any) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
 
-    // Add current message and PDF context
-    const currentMessageParts: any[] = [{ text: message }];
-    if (pdfInlineData) {
-      currentMessageParts.unshift(pdfInlineData); // Add PDF as first part of the current prompt
-    }
+    // Build current message — PDF goes first as context
+    const currentMessageParts: any[] = [];
+    if (pdfInlineData) currentMessageParts.push(pdfInlineData);
+    currentMessageParts.push({ text: message });
 
-    contents.push({
-      role: 'user',
-      parts: currentMessageParts
-    });
+    contents.push({ role: 'user', parts: currentMessageParts });
 
-    // 3. The Scholar Persona (System Instruction)
-    const systemInstruction = `You are the USTED Scholar AI, a highly advanced academic assistant. Your goal is to guide the student through their lecture materials. Always cite the relevant parts of the text. Keep responses structured, professional, and visually pleasing. Format with Markdown.`;
+    const systemInstruction = `You are the USTED Scholar AI, a highly advanced academic assistant for USTED students. 
+Your goal is to guide the student through their lecture materials. 
+Always cite the relevant parts of the text. 
+Keep responses structured, professional, and visually pleasing. 
+Format with Markdown.`;
 
-    // 4. Generate Content Stream (Google Search Disabled for Maximum Speed)
     const responseStream = await ai.models.generateContentStream({
       model: 'gemini-2.5-flash',
       contents: contents,
-      config: {
-        systemInstruction,
-        // Google Search is disabled to eliminate the 5-10 second lookup latency
-      }
+      config: { systemInstruction }
     });
 
-    // 5. Create a standard Web ReadableStream
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of responseStream) {
-             if (chunk.text) {
-                controller.enqueue(new TextEncoder().encode(chunk.text));
-             }
+            if (chunk.text) {
+              controller.enqueue(new TextEncoder().encode(chunk.text));
+            }
           }
         } catch (e: any) {
-          console.error("Stream Error:", e);
+          console.error('Stream Error:', e);
           controller.enqueue(new TextEncoder().encode(`\n[Stream Error: ${e.message}]`));
         } finally {
           controller.close();
@@ -105,7 +103,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error('Gemini API Error:', error);
     return NextResponse.json({ error: error.message || 'Failed to generate response' }, { status: 500 });
   }
 }
