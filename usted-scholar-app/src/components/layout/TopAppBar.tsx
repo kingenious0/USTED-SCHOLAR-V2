@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Search, Bell, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export function TopAppBar() {
   return (
@@ -12,13 +13,23 @@ export function TopAppBar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-30 bg-[#0A0A0A]/60 backdrop-blur-xl border-b border-white/10"
     >
-      <div className="flex items-center gap-4">
-        <motion.span 
+      <div className="flex items-center gap-3">
+        <motion.div
           whileHover={{ scale: 1.05 }}
-          className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-orange-500 font-['Outfit'] tracking-tight"
+          className="flex items-center gap-2"
         >
-          USTED Scholar
-        </motion.span>
+          <Image
+            src="/logo.png"
+            alt="USTED Scholar"
+            width={36}
+            height={36}
+            className="rounded-md object-contain drop-shadow-lg"
+            priority
+          />
+          <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#8B0000] to-[#C5A028] font-['Outfit'] tracking-tight hidden sm:block">
+            USTED Scholar
+          </span>
+        </motion.div>
       </div>
       
       <div className="flex items-center gap-5">

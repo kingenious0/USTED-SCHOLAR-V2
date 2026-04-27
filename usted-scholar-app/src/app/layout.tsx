@@ -11,6 +11,15 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "USTED Scholar",
   description: "Tech-Modern Learning Assistant for USTED",
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: "/logo.png",
+  },
 };
 
 import { ThemeProvider } from "@/components/theme-provider";

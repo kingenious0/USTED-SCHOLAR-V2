@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BookOpen, UserCircle, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const navItems = [
   { name: "Home", href: "/", icon: Home },
@@ -22,9 +23,19 @@ export function SideNavBar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="hidden md:flex flex-col fixed left-0 top-0 w-64 z-40 bg-[#0A0A0A]/95 backdrop-blur-2xl h-screen border-r border-white/5 rounded-r-3xl shadow-[5px_0_30px_rgba(0,0,0,0.5)]"
     >
-      <div className="p-8">
-        <h2 className="text-2xl font-black tracking-tighter text-white font-['Outfit']">USTED</h2>
-        <p className="text-xs text-primary/70 font-medium font-['Outfit'] tracking-wider uppercase mt-1">Tech-Modern Learning</p>
+      <div className="p-6 flex items-center gap-3">
+        <Image
+          src="/logo.png"
+          alt="USTED Scholar"
+          width={44}
+          height={44}
+          className="rounded-xl object-contain drop-shadow-[0_0_12px_rgba(197,160,40,0.4)]"
+          priority
+        />
+        <div>
+          <h2 className="text-lg font-black tracking-tighter text-white font-['Outfit']">USTED</h2>
+          <p className="text-xs text-[#C5A028]/80 font-medium font-['Outfit'] tracking-wider uppercase">Scholar AI</p>
+        </div>
       </div>
 
       <nav className="flex-1 px-4 space-y-2 mt-4">
