@@ -136,12 +136,15 @@ export default function ChatPage() {
            </h2>
         </div>
 
-        {/* CONTENT TOGGLE FOR MOBILE */}
+        {/* CONTENT TOGGLE FOR MOBILE / DESKTOP VIEW */}
         <div className="flex-1 overflow-hidden relative">
-          <div className={`absolute inset-0 transition-transform duration-500 ${mobileView === "summary" ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+          {/* Summary / Dashboard View */}
+          <div className={`absolute lg:relative inset-0 transition-transform duration-500 ${mobileView === "summary" ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
              <StudyDashboard fileId={course.file_id} title={title} />
           </div>
-          <div className={`absolute inset-0 transition-transform duration-500 bg-[#0A0A0A] ${mobileView === "chat" ? "translate-x-0" : "translate-x-full lg:translate-x-0 lg:relative lg:block hidden lg:w-[420px] xl:w-[480px]"}`}>
+          
+          {/* Mobile-only Chat View (Hidden on Desktop) */}
+          <div className={`lg:hidden absolute inset-0 transition-transform duration-500 bg-[#0A0A0A] ${mobileView === "chat" ? "translate-x-0" : "translate-x-full"}`}>
              <ChatInterface courseId={course.id} fileId={course.file_id} />
           </div>
         </div>
