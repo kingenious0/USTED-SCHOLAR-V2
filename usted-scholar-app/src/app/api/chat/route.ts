@@ -73,7 +73,7 @@ Keep responses structured, professional, and visually pleasing.
 Format with Markdown.`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: contents,
       config: { systemInstruction }
     });
