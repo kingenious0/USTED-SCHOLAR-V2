@@ -19,10 +19,14 @@ import {
   Sparkles,
   FileText,
   MessageSquare,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ChatPage() {
   const { id } = useParams() as { id: string };
@@ -30,6 +34,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [mobileView, setMobileView] = useState<"summary" | "chat">("summary");
   const [showQuiz, setShowQuiz] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     async function fetchCourse() {
@@ -65,19 +70,42 @@ export default function ChatPage() {
     <div className="flex h-[100dvh] max-h-[100dvh] bg-[#050505] text-white font-sans overflow-hidden">
       
       {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="w-[260px] shrink-0 border-r border-white/5 hidden lg:flex flex-col bg-[#020202]">
-        <div className="p-8 pb-10">
-          <Link href="/" className="flex items-center gap-3 group">
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 80 : 260 }}
+        className="shrink-0 border-r border-white/5 hidden lg:flex flex-col bg-[#020202] relative group"
+      >
+        <div className={`p-8 pb-10 flex items-center ${isSidebarCollapsed ? "justify-center px-0" : "justify-between"}`}>
+          {!isSidebarCollapsed && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-3 overflow-hidden whitespace-nowrap"
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8C033B] to-[#FFCC22] flex items-center justify-center">
+                <span className="text-white font-black text-xs">U</span>
+              </div>
+              <h1 className="text-xl font-black tracking-tighter text-white">
+                USTED<span className="text-[#8C033B]">SCHOLAR</span>
+              </h1>
+            </motion.div>
+          )}
+          {isSidebarCollapsed && (
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8C033B] to-[#FFCC22] flex items-center justify-center">
               <span className="text-white font-black text-xs">U</span>
             </div>
-            <h1 className="text-xl font-black tracking-tighter text-white transition-opacity group-hover:opacity-80">
-              USTED<span className="text-[#8C033B]">SCHOLAR</span>
-            </h1>
-          </Link>
+          )}
         </div>
+
+        {/* Toggle Button */}
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#151515] border border-white/10 flex items-center justify-center text-gray-500 hover:text-white shadow-xl z-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          {isSidebarCollapsed ? <PanelLeftOpen className="w-3 h-3" /> : <PanelLeftClose className="w-3 h-3" />}
+        </button>
         
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-1 overflow-hidden">
           {[
             { href: "/", label: "Dashboard", icon: LayoutDashboard },
             { href: "/", label: "My Library", icon: BookOpen, active: true },
@@ -92,14 +120,23 @@ export default function ChatPage() {
                 item.active 
                   ? "text-white bg-[#8C033B]/10 border border-[#8C033B]/30" 
                   : "text-gray-400 hover:text-white hover:bg-white/5"
-              } ${item.mt || ""}`}
+              } ${item.mt || ""} ${isSidebarCollapsed ? "justify-center px-0" : ""}`}
+              title={isSidebarCollapsed ? item.label : ""}
             >
-              <item.icon className={`w-5 h-5 ${item.active ? "text-[#FFCC22]" : "opacity-60"}`} />
-              {item.label}
+              <item.icon className={`w-5 h-5 shrink-0 ${item.active ? "text-[#FFCC22]" : "opacity-60"}`} />
+              {!isSidebarCollapsed && (
+                <motion.span 
+                  initial={{ opacity: 0, x: -10 }} 
+                  animate={{ opacity: 1, x: 0 }}
+                  className="whitespace-nowrap"
+                >
+                  {item.label}
+                </motion.span>
+              )}
             </Link>
           ))}
         </nav>
-      </aside>
+      </motion.aside>
 
       {/* ── MAIN CONTENT ── */}
       <div className="flex-1 flex flex-col min-w-0 relative">
