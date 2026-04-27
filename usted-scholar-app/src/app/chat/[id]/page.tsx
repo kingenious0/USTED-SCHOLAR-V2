@@ -20,7 +20,6 @@ import {
   FileText,
   MessageSquare,
   HelpCircle,
-  ChevronLeft,
   PanelLeftClose,
   PanelLeftOpen
 } from "lucide-react";
