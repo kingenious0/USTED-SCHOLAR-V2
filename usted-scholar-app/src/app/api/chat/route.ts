@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     if (fileId && APPS_SCRIPT_URL) {
       try {
         const pdfResponse = await fetch(`${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`, {
-          cache: 'force-cache' // CACHE THE GIGANTIC PDF FOREVER
+          next: { revalidate: 3600 } // Cache for 1 hour (Vercel-compatible)
         });
         const pdfJson = await pdfResponse.json();
         

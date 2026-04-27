@@ -137,7 +137,7 @@ export function LibraryClient({ courses, program, level, semester }: LibraryClie
             <div className="absolute top-10 right-20 w-[200px] h-[200px] rounded-full bg-[#FFCC22]/5 blur-[60px] pointer-events-none" />
             <div className="relative z-10 max-w-2xl">
               <span className="inline-block px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-bold tracking-widest uppercase text-gray-300 mb-5">
-                Semester 2 · 2025/2026
+                Semester 2 · 2025/2026 
               </span>
               <h2 className="text-4xl lg:text-5xl font-black leading-tight mb-4 font-['Outfit'] tracking-tight">
                 Continue your <span className="text-[#FFCC22]">Scholarly</span>

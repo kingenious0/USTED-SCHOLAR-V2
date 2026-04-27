@@ -19,9 +19,21 @@ export async function POST(req: Request) {
     let pdfInlineData = null;
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
       const pdfResponse = await fetch(`${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`, {
-        cache: 'force-cache' // CACHE THE GIGANTIC PDF FOREVER
+        signal: controller.signal,
+        next: { revalidate: 3600 } // Cache for 1 hour (Vercel-compatible)
       });
+      clearTimeout(timeout);
+
+      if (!pdfResponse.ok) {
+        const errText = await pdfResponse.text();
+        console.error(`Apps Script HTTP ${pdfResponse.status}:`, errText);
+        return NextResponse.json({ error: `Apps Script error ${pdfResponse.status}: ${errText.slice(0, 200)}` }, { status: 500 });
+      }
+
       const pdfJson = await pdfResponse.json();
       
       if (pdfJson.data) {
@@ -31,10 +43,13 @@ export async function POST(req: Request) {
             mimeType: "application/pdf"
           }
         };
+      } else {
+        console.error("Apps Script returned no data:", JSON.stringify(pdfJson).slice(0, 300));
       }
-    } catch (e) {
-      console.error("Failed to fetch PDF from Apps Script:", e);
-      return NextResponse.json({ error: 'Failed to fetch course material' }, { status: 500 });
+    } catch (e: any) {
+      console.error("Failed to fetch PDF from Apps Script:", e?.message || e);
+      const msg = e?.name === 'AbortError' ? 'Request timed out fetching course material (30s)' : `Failed to fetch course material: ${e?.message}`;
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     if (!pdfInlineData) {
