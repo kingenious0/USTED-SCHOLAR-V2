@@ -15,8 +15,10 @@ import {
   BookMarked,
   ChevronRight,
   X,
+  Menu,
 } from "lucide-react";
 import Link from "next/link";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 interface Course {
   id: string;
@@ -50,13 +52,18 @@ export function LibraryClient({ courses, program, level, semester }: LibraryClie
   return (
     <div className="flex h-screen bg-[#050505] dark:bg-[#050505] bg-gray-50 text-gray-900 dark:text-white font-sans overflow-hidden transition-colors duration-300">
 
-      {/* ── LEFT SIDEBAR ── */}
-      <aside className="w-[220px] shrink-0 flex flex-col border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#020202] py-8 px-4 transition-colors duration-300">
+      {/* ── LEFT SIDEBAR (Desktop) ── */}
+      <aside className="hidden lg:flex w-[240px] shrink-0 flex-col border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#020202] py-8 px-4 transition-colors duration-300">
         <div className="px-3 mb-12">
-          <h1 className="text-2xl font-black tracking-tighter">
-            <span className="text-[#8C033B]">USTED</span>
-          </h1>
-          <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase font-semibold mt-0.5">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8C033B] to-[#FFCC22] flex items-center justify-center">
+              <span className="text-white font-black text-xs">U</span>
+            </div>
+            <h1 className="text-xl font-black tracking-tighter">
+              <span className="text-[#8C033B]">USTED</span>
+            </h1>
+          </div>
+          <p className="text-[9px] text-gray-400 tracking-[0.2em] uppercase font-semibold">
             Tech-Modern Learning
           </p>
         </div>
@@ -240,6 +247,8 @@ export function LibraryClient({ courses, program, level, semester }: LibraryClie
           </section>
         </main>
       </div>
+      {/* ── BOTTOM NAV (Mobile) ── */}
+      <BottomNav />
     </div>
   );
 }
