@@ -33,7 +33,7 @@ export function ChatInterface({ courseId, fileId }: { courseId: string, fileId: 
     {
       id: "welcome",
       role: "ai",
-      content: "Hello! I am the **Scholar Assistant**. I've loaded your course materials. How can I help you master this topic today?",
+      content: "Hello! I am the **Scholar Assistant**. I've loaded your course materials. How can I help you master this course today?",
     }
   ]);
   const [input, setInput] = useState("");
