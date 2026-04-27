@@ -53,7 +53,7 @@ Only return the JSON array, no other text.`;
       ]
     });
 
-    const text = result.response.text();
+    const text = result.text;
     const jsonStr = text.match(/\[.*\]/s)?.[0] || text;
     const quiz = JSON.parse(jsonStr);
 
