@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const base64Data = await fetchPdfBase64(fileId);
     if (!base64Data) return NextResponse.json({ error: 'Failed to fetch course material' }, { status: 500 });
 
-    const prompt = `Analyze this lecture material and generate a high-quality quiz.
+    const promptText = `Analyze this lecture material and generate a high-quality quiz.
 Return EXACTLY a JSON array of 5 objects. Each object must have:
 - question: The question text
 - options: An array of 4 strings
@@ -40,11 +40,18 @@ Return EXACTLY a JSON array of 5 objects. Each object must have:
 
 Only return the JSON array, no other text.`;
 
-    const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-    const result = await model.generateContent([
-      { inlineData: { data: base64Data, mimeType: 'application/pdf' } },
-      { text: prompt }
-    ]);
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { data: base64Data, mimeType: 'application/pdf' } },
+            { text: promptText }
+          ]
+        }
+      ]
+    });
 
     const text = result.response.text();
     const jsonStr = text.match(/\[.*\]/s)?.[0] || text;
