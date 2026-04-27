@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>USTED Scholar - Course Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#2e5bff",
+                    "surface": "#f8f9fa",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed-variant": "#0035be",
+                    "inverse-surface": "#2e3132",
+                    "on-secondary-container": "#603100",
+                    "on-primary-container": "#efefff",
+                    "on-tertiary-fixed": "#151c27",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container": "#edeeef",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#4e5562",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#c0c7d6",
+                    "outline-variant": "#c4c5d9",
+                    "surface-dim": "#d9dadb",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#fd8b00",
+                    "surface-variant": "#e1e3e4",
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "on-background": "#191c1d",
+                    "secondary-fixed": "#ffdcc3",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-surface-variant": "#434656",
+                    "background": "#f8f9fa",
+                    "secondary": "#904d00",
+                    "on-secondary-fixed": "#2f1500",
+                    "surface-bright": "#f8f9fa",
+                    "on-primary-fixed": "#001356",
+                    "on-tertiary-fixed-variant": "#404754",
+                    "inverse-primary": "#b8c3ff",
+                    "outline": "#747688",
+                    "on-tertiary-container": "#eaf0ff",
+                    "primary-fixed-dim": "#b8c3ff",
+                    "inverse-on-surface": "#f0f1f2",
+                    "tertiary-container": "#666d7b",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#dce2f3",
+                    "on-primary": "#ffffff",
+                    "surface-container-high": "#e7e8e9",
+                    "on-surface": "#191c1d",
+                    "secondary-fixed-dim": "#ffb77d",
+                    "primary-fixed": "#dde1ff",
+                    "primary": "#0040e0",
+                    "surface-tint": "#124af0",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "xl": "80px",
+                    "xs": "4px",
+                    "md": "24px",
+                    "lg": "48px",
+                    "sm": "12px",
+                    "margin": "32px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "h2": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "h3": ["Plus Jakarta Sans"],
+                    "h1": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "h2": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "700"}],
+                    "h1": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid #E5E7EB;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-white/70 backdrop-blur-md border-b border-gray-200/50 docked full-width top-0 z-50 fixed flex justify-between items-center w-full px-6 py-3 font-['Plus_Jakarta_Sans'] antialiased">
+<div class="flex items-center gap-8">
+<span class="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">USTED Scholar</span>
+<div class="hidden md:flex items-center bg-gray-100/50 rounded-full px-4 py-1.5 gap-2 border border-transparent focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-gray-500 text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64" placeholder="Search resources..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-gray-100/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-gray-100/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-on-surface-variant">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-gray-200">
+<img alt="Scholar Profile" data-alt="Close-up portrait of a professional scholar with spectacles, soft studio lighting, clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXHImjRvcRcpSjzJUTrrO2CSMhDGrO5zdJYXS9A32QesXVmnIacltCB2mocP7iNK02rmO0Kf8Mto3Z4-AP2FGyKmlA9PBU1NGfRbR985oEfqJ1XdVSKGI4DhqppYIHrEWMgeZk2flvkMJ9lzJBVr1P3oCdEWAPIhQ14HnJOyA07Hy9jRYTlLCvxlOhCZimpi-4fnGmi4GufZT52VbVBCTJ23RFyUgtPZoXDPY9X_V8_rSKvitnWyNgCQuilZgwRY28pn1iPqnPSvg"/>
+</div>
+</div>
+</header>
+<div class="flex pt-16 h-screen">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-6 bg-white/80 backdrop-blur-xl w-64 border-r border-gray-200/50 font-['Plus_Jakarta_Sans'] text-sm font-medium">
+<div class="px-6 mb-8">
+<h2 class="text-lg font-black text-blue-600">Library</h2>
+<p class="text-[10px] text-gray-400 uppercase tracking-widest">Academic Portal</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 py-2.5 px-4 text-gray-600 hover:bg-gray-50 mx-2 transition-all ease-in-out hover:translate-x-1 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 py-2.5 px-4 bg-blue-50 text-blue-700 rounded-lg mx-2 transition-all ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span>Library</span>
+</a>
+<a class="flex items-center gap-3 py-2.5 px-4 text-gray-600 hover:bg-gray-50 mx-2 transition-all ease-in-out hover:translate-x-1 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span>Research</span>
+</a>
+<a class="flex items-center gap-3 py-2.5 px-4 text-gray-600 hover:bg-gray-50 mx-2 transition-all ease-in-out hover:translate-x-1 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Network</span>
+</a>
+<a class="flex items-center gap-3 py-2.5 px-4 text-gray-600 hover:bg-gray-50 mx-2 transition-all ease-in-out hover:translate-x-1 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-1 border-t border-gray-100 pt-4">
+<button class="w-full flex items-center gap-3 py-2 px-4 text-gray-600 hover:bg-gray-50 rounded-lg transition-all">
+<span class="material-symbols-outlined">help</span>
+<span>Help</span>
+</button>
+<button class="w-full flex items-center gap-3 py-2 px-4 text-error hover:bg-error/5 rounded-lg transition-all">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto px-gutter md:px-lg py-md pb-32">
+<!-- Hero Selection -->
+<section class="mb-12">
+<div class="relative h-[400px] rounded-3xl overflow-hidden glass-card group">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Spacious modern university library with high ceilings, warm wooden shelves, and soft sunlight filtering through large windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGRQp11Ewi0TVlPzXPCitOijQOZCikH0kuX1cI3oZcpoSnBaQqySyjowWVJNVbKf7XpKfMS8KdIGShqJjR8BGiucqBrqWCjYJtMQSFlHk5S4aNZFVA3TvOs17dbfNk4e8gSach3JzZA-k85Q7vuAOBv5XKjMXsr8YSYyTv_nxnCfCS9LKSm6ubLyP8cXs_bnBU1v4BSPplJSH-nJ4VJ84BSt2-xdi5mommdZdrxhYzTwqTzVd9OnwNfDbAJ6TGVQ-yEaOi0AC_pE8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-8 md:p-12 w-full md:w-2/3">
+<span class="inline-block px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-[10px] mb-4">CONTINUE LEARNING</span>
+<h1 class="font-h1 text-white text-3xl md:text-5xl mb-4">ITE 354: Advanced Data Architectures</h1>
+<p class="text-white/80 font-body-lg mb-6 line-clamp-2">Master the complexities of distributed systems and scalable database design in modern Pan-African tech ecosystems.</p>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-white px-8 py-3 rounded-full font-label-md hover:brightness-110 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                                Resume Course
+                            </button>
+<button class="bg-white/20 backdrop-blur-md text-white px-8 py-3 rounded-full font-label-md hover:bg-white/30 transition-all">
+                                Course Details
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Horizontal Scroll: My In-Progress Courses -->
+<section class="mb-12">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-h2 text-on-surface flex items-center gap-2">
+                        My Research Tracks
+                        <span class="text-primary text-sm font-medium px-2 py-0.5 bg-primary/10 rounded-full">4 Active</span>
+</h2>
+<div class="flex gap-2">
+<button class="p-2 rounded-full border border-gray-200 hover:bg-white transition-all"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-2 rounded-full border border-gray-200 hover:bg-white transition-all"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+<div class="flex gap-6 overflow-x-auto hide-scrollbar pb-4 snap-x">
+<!-- Course Card 1 -->
+<div class="min-w-[300px] flex-shrink-0 group cursor-pointer snap-start">
+<div class="relative h-[180px] rounded-2xl overflow-hidden mb-4 border border-gray-100 transition-transform duration-300 group-hover:scale-[1.02]">
+<img class="w-full h-full object-cover" data-alt="Laboratory research scene with microscopes and blue liquid in glass tubes, high-tech academic feel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIwN1IHcXeCuCRz1rwQKs8SP0WuWgWdI_cOItvalq0RZOBxycmU_UHFNuNXHSvar0w9rrbzOxd4rTSc0NCsUmhjkIg3B8sSQVmMhrYwXchYp-rQVRhYhdxu5qvdeEkcBjm_HyAUKx8S0F18GicZUgAcxcVbb5T0pp7C5KGw0OxFxugW945gBvfTajrvQWCWZ5yc67QOBUa9m1COSayvLuD8SKf0G6f0A6PAQFGq9iRlXrPZCsgJZArL-golR7ykfzn7o6WP-7Gq6E"/>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<h3 class="font-h3 text-lg mb-1 group-hover:text-primary transition-colors">Research Methods</h3>
+<p class="text-on-surface-variant text-sm mb-4">Dr. Amadi • 12 Modules</p>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold text-gray-500">
+<span>KNOWLEDGE LOADED</span>
+<span class="text-primary">75%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full" style="width: 75%"></div>
+</div>
+</div>
+</div>
+<!-- Course Card 2 -->
+<div class="min-w-[300px] flex-shrink-0 group cursor-pointer snap-start">
+<div class="relative h-[180px] rounded-2xl overflow-hidden mb-4 border border-gray-100 transition-transform duration-300 group-hover:scale-[1.02]">
+<img class="w-full h-full object-cover" data-alt="Close-up of digital data visualization on screen, neon blue lines and charts, tech focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClrkVfLWVhGiD3ngPq7AZBLFAQZloENtqsvMNVOWowUF4yyspgv9M4MtCc28VBYsavTWMX_DGOzFl0G8aTYOAzv1egPm1w5b_LFHFAL4fXtTw8u2gkVoQn9kKlTOVYENP39xXlkxyc1zaYoHCsXV-gipwPoKfW60dvt57-_65AJ8X9l84aWH07qP07OxJl40aIQ1vKBXrAarEkvgIhk7ZKru1MvkYFKpwcVmidIFXDzX7lAG7eFRAVcOS33rKalQbm5Kw1_DtLgBo"/>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<h3 class="font-h3 text-lg mb-1 group-hover:text-primary transition-colors">ITE 354: Databases</h3>
+<p class="text-on-surface-variant text-sm mb-4">Prof. Mensah • 8 Modules</p>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold text-gray-500">
+<span>KNOWLEDGE LOADED</span>
+<span class="text-primary">42%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<!-- Course Card 3 -->
+<div class="min-w-[300px] flex-shrink-0 group cursor-pointer snap-start">
+<div class="relative h-[180px] rounded-2xl overflow-hidden mb-4 border border-gray-100 transition-transform duration-300 group-hover:scale-[1.02]">
+<img class="w-full h-full object-cover" data-alt="African abstract pattern in electric blue and gold colors, digital art style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkkmmZWFWVlOjcJ9-o_lJja9tzErdo7q1bQKlHDUJWmioPZQDsX6SQlGGZ_Dz3MO7wtp16BNZrOvDQ3LN8cqerB-44TVdPYoWh2r1a9xqmvHZbfRCNWGuZUOBPsIi9Ovzg6WXWheVrt2afaTSQoIbvHdTYRWtpiPg20kJAoH81PF1bX8hQx3ZfqOxgsEtLn9e3FcCL84Hd_fZWnpL5-9jJk4Tn5nmRIdchEJsiIA3NEHUgopssFZ4B_SySr5_hHqzzyzoNjfkvr6A"/>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<h3 class="font-h3 text-lg mb-1 group-hover:text-primary transition-colors">Digital Ethics</h3>
+<p class="text-on-surface-variant text-sm mb-4">Global Seminar • 5 Modules</p>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold text-gray-500">
+<span>KNOWLEDGE LOADED</span>
+<span class="text-primary">90%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full" style="width: 90%"></div>
+</div>
+</div>
+</div>
+<!-- Course Card 4 -->
+<div class="min-w-[300px] flex-shrink-0 group cursor-pointer snap-start">
+<div class="relative h-[180px] rounded-2xl overflow-hidden mb-4 border border-gray-100 transition-transform duration-300 group-hover:scale-[1.02]">
+<img class="w-full h-full object-cover" data-alt="High tech server room with blinking lights and cooling fans, blue and purple lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWV6_yWe5MkMqz1HiaFg65F3wf0rHwmY527s8aoaJi9jnJ5S8wXu4OVg4IUvYjys2dPmiZlSB8-WC4NuAk0tkRZF5aKZt9mWT-u79K01XkZdnYTciMuhXo7-4LwRLrc7GcJRBvWJlF1_uNq_fCLvEZui8G7rMZZPulH-8N0upDF4cdQN8wcYjTL65iirS7paJdH__2ucyLguUnhee47W0UFrd8QoLWuRGvYVXjxUVK8-QkwSg6Av2NWnpgGBtEYgMbhrwt-bE9XC8"/>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<h3 class="font-h3 text-lg mb-1 group-hover:text-primary transition-colors">Infrastructure Mgmt</h3>
+<p class="text-on-surface-variant text-sm mb-4">Engr. Tunde • 15 Modules</p>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold text-gray-500">
+<span>KNOWLEDGE LOADED</span>
+<span class="text-primary">15%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full" style="width: 15%"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid: Recommended Collections -->
+<section class="mb-12">
+<h2 class="font-h2 text-on-surface mb-8">Curated Collections</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-6 h-[500px]">
+<div class="md:col-span-2 md:row-span-2 glass-card rounded-3xl p-8 relative overflow-hidden group cursor-pointer">
+<img class="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:scale-105 transition-transform duration-500" data-alt="A group of focused diverse students working together in a modern tech workspace with laptops and whiteboards" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcffeFhVlOMFKa3urfAjcyJfUjTh6-Lx1wdvGAlZpv-R_BeoOhFdfyf-ho6u3ee0ArOj730ollSEVHpFeskfNVU5aFxmhjRGcTj4IDZ7Hm4tCWS_LpQHzkCCL8nfPm-tW08Z2u2o-DdvSCISDHyhVxLSxk_JV3jUXElMpjmOAwFEIqemhNLdU_L-Sb9ShN278DKw2qbf6oMi5AVAOdiRHR5CcgtrjynPTxFtSjlMFrLdQILbXeFOgadtOTESoEMUf0_YnN4G5o26Q"/>
+<div class="relative z-10 flex flex-col h-full">
+<span class="text-primary font-label-md mb-2">HOT COLLECTION</span>
+<h3 class="text-3xl font-h1 mb-4 text-on-surface">AI in African Development</h3>
+<p class="text-on-surface-variant max-w-sm mb-6">Explore how machine learning is being tailored to solve regional challenges in agriculture, health, and finance.</p>
+<div class="mt-auto flex items-center gap-2 text-primary font-bold">
+                                View Collection <span class="material-symbols-outlined">arrow_forward</span>
+</div>
+</div>
+</div>
+<div class="md:col-span-2 glass-card rounded-3xl p-6 relative overflow-hidden group cursor-pointer">
+<div class="relative z-10 flex justify-between items-center">
+<div>
+<h3 class="text-xl font-h3 mb-1">Cybersecurity Fundamentals</h3>
+<p class="text-on-surface-variant text-sm">24 resources • Advanced level</p>
+</div>
+<div class="bg-primary/10 p-3 rounded-2xl text-primary">
+<span class="material-symbols-outlined">shield</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-3xl p-6 flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-4xl mb-4 text-primary group-hover:text-white">science</span>
+<h4 class="font-bold group-hover:text-white">Bio-Tech</h4>
+</div>
+<div class="glass-card rounded-3xl p-6 flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-4xl mb-4 text-secondary-container group-hover:text-white">payments</span>
+<h4 class="font-bold group-hover:text-white">FinTech</h4>
+</div>
+</div>
+</section>
+<!-- Netflix Style Horizontal Scroll: New Arrivals -->
+<section class="mb-12">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-h2 text-on-surface">New in Library</h2>
+<a class="text-primary font-label-md hover:underline" href="#">See All</a>
+</div>
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pb-6">
+<!-- Vertical Course Cards -->
+<div class="min-w-[160px] md:min-w-[220px] group cursor-pointer">
+<div class="aspect-[2/3] rounded-xl overflow-hidden glass-card border-none mb-3 shadow-sm hover:shadow-lg transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="Abstract server network illustration with light glowing through fiber optic cables" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBByawPuW4dEQt1mp2noXiEtYXnvAOzSF1XxAQXGv4anFBKUelwjbbqv-cuSarGPk034mL5hGXB6gn-P4h3qi6o4b-5vpcnB6HOah5kUCIrqQVFlfGxxm0bnyiZywBZhB94UQHLUp7GzeQz1oMPKJMX4WwhKYl7VE5k8IPbjG2eL5TKljQ7wPvf1PqWCFjWGBsUqTqh8e4K6k_GEngXl7TH8J4dbUjVCEP25ON0DvbEjPqk3dmHeG0q70-U8_9uvbQLZGLLpx9dGwM"/>
+</div>
+<h4 class="font-bold text-sm line-clamp-1">Cloud Architecture</h4>
+<p class="text-xs text-gray-500">System Admin</p>
+</div>
+<div class="min-w-[160px] md:min-w-[220px] group cursor-pointer">
+<div class="aspect-[2/3] rounded-xl overflow-hidden glass-card border-none mb-3 shadow-sm hover:shadow-lg transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="Matrix rain code effect on dark screen with emerald green characters" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr0MJFYyIuNolDqqAtUyxkUOINzfbFf3DqA884AHLZLnxqFaFDJqb0P4v-cMgQGR4RI0coihVGTAMjk1tqkm1azksJj00LdIugdIQ-lwjqciI-765izEJzRTt28-ZuOQ0FhifcGVhYMRoWLxwmi6S-hHLWco_B3LNaLtS0phoLfOZTmJawNTg7Ydfkx_shEFJgbankHehrDTi1OnVu9h0TqwJUxM0-WZ9hAicCDRiOwtVjGL6h9bIlIhyHUiGMV1uw7pAzVcp93hw"/>
+</div>
+<h4 class="font-bold text-sm line-clamp-1">Ethical Hacking</h4>
+<p class="text-xs text-gray-500">Cyber Security</p>
+</div>
+<div class="min-w-[160px] md:min-w-[220px] group cursor-pointer">
+<div class="aspect-[2/3] rounded-xl overflow-hidden glass-card border-none mb-3 shadow-sm hover:shadow-lg transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="Futuristic robotic hand reaching out, high contrast lighting, technological innovation" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAp1jV-JP_JQDTCdKC9-344yHUlEpWYHzzU5Sl-apl5h3TWGAfXYkdRdO6DanLNNn-RHMMC7soWdFg3glrq_IOwrL9YydNymyC_MitvZ1UmOGadk4FeAyTNONnXluvKkCFewc2462ODtnBWyRav6SRXhhYdpqnz_e6YtD54mgrYJex5MyuU9zTJ8Z3CGiG_oXp3AQbBd3CHjzg-DDnynPWegoyvP5iDExuNvi6b5_10FMxx9DLMHP5xqdDXt1vrY_nS_Kh0S-diaQg"/>
+</div>
+<h4 class="font-bold text-sm line-clamp-1">Robotics &amp; AI</h4>
+<p class="text-xs text-gray-500">Engineering</p>
+</div>
+<div class="min-w-[160px] md:min-w-[220px] group cursor-pointer">
+<div class="aspect-[2/3] rounded-xl overflow-hidden glass-card border-none mb-3 shadow-sm hover:shadow-lg transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="Academic researcher writing on a clear glass board with markers, focused expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWToJXPNTjSWSkdXDrd0upsfs7ix_Fn2S46DhF3C5JlL94_ebxAR2Rapui1ZVUnjXtqC5uwIi3prwZWbdrrQXMTcoIvFDPJMXyye4K92Xn92SseHg3a_IGoGj2OEC2QgMJBj7taVJbG6M3bmPnr-IFuksa_YOIVr-a-o6JKSqeweLUSWNEbCvIZ9CnnBKKcXbN7SNZ0ImfDPrwzh-t7a27hqxvnPfrXQZ_57v1Jhg_fR4Qc77EfCwxA_NPvUfAKPv2GpfcKxmbyhA"/>
+</div>
+<h4 class="font-bold text-sm line-clamp-1">Advanced Statistics</h4>
+<p class="text-xs text-gray-500">Mathematics</p>
+</div>
+<div class="min-w-[160px] md:min-w-[220px] group cursor-pointer">
+<div class="aspect-[2/3] rounded-xl overflow-hidden glass-card border-none mb-3 shadow-sm hover:shadow-lg transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="People sitting around a conference table in a bright sunlit office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8XQ9HhXk7fF29-ELXaHn1Ymy_q-h3lF7KtgiQJwfbv3XtMX-kLplclk_ka3VsPU-MXa0cdf1cNgb80b5tLZCCE9D0AGgeyTKfduT4U4sXXDeXwaSYFef7QaqQipFfV9EdKfZZ3Pfyef0JLrP8LDXVoAO2mjrB-3SOCGe1umDaXbJEBHuGSskn6VOP0dBH-_-YwcqNKLpD1ODRVqGFfJNd5jcDE_OMJ9RtfxKvmDcMHHcdga9mBtEZOapNFo-hl8MEmXNigPy0bBs"/>
+</div>
+<h4 class="font-bold text-sm line-clamp-1">Project Management</h4>
+<p class="text-xs text-gray-500">Business</p>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 bg-white/90 backdrop-blur-lg border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-t-2xl font-['Plus_Jakarta_Sans'] text-[10px] font-semibold">
+<button class="flex flex-col items-center justify-center text-gray-400 active:bg-gray-50 scale-90 duration-100">
+<span class="material-symbols-outlined">home</span>
+<span>Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-blue-600 bg-blue-50/50 rounded-xl px-3 py-1 scale-90 duration-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">book</span>
+<span>Library</span>
+</button>
+<button class="flex flex-col items-center justify-center text-gray-400 active:bg-gray-50 scale-90 duration-100">
+<span class="material-symbols-outlined">search</span>
+<span>Search</span>
+</button>
+<button class="flex flex-col items-center justify-center text-gray-400 active:bg-gray-50 scale-90 duration-100">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</button>
+</nav>
+</body></html>

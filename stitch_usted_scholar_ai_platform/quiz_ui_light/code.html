@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>USTED Scholar - Academic Challenge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#2e5bff",
+                        "surface": "#f8f9fa",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed-variant": "#0035be",
+                        "inverse-surface": "#2e3132",
+                        "on-secondary-container": "#603100",
+                        "on-primary-container": "#efefff",
+                        "on-tertiary-fixed": "#151c27",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container": "#edeeef",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#4e5562",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#c0c7d6",
+                        "outline-variant": "#c4c5d9",
+                        "surface-dim": "#d9dadb",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#fd8b00",
+                        "surface-variant": "#e1e3e4",
+                        "on-secondary-fixed-variant": "#6e3900",
+                        "on-background": "#191c1d",
+                        "secondary-fixed": "#ffdcc3",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-surface-variant": "#434656",
+                        "background": "#f8f9fa",
+                        "secondary": "#904d00",
+                        "on-secondary-fixed": "#2f1500",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed": "#001356",
+                        "on-tertiary-fixed-variant": "#404754",
+                        "inverse-primary": "#b8c3ff",
+                        "outline": "#747688",
+                        "on-tertiary-container": "#eaf0ff",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-container": "#666d7b",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#dce2f3",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "on-surface": "#191c1d",
+                        "secondary-fixed-dim": "#ffb77d",
+                        "primary-fixed": "#dde1ff",
+                        "primary": "#0040e0",
+                        "surface-tint": "#124af0",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "xl": "80px",
+                        "xs": "4px",
+                        "md": "24px",
+                        "lg": "48px",
+                        "sm": "12px",
+                        "margin": "32px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "h2": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h3": ["Plus Jakarta Sans"],
+                        "h1": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "h2": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "700"}],
+                        "h1": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<div class="flex min-h-screen">
+<!-- SideNavBar - Desktop Only -->
+<aside class="hidden md:flex flex-col h-screen w-64 border-r border-gray-200/50 bg-white/80 backdrop-blur-xl py-6 sticky top-0 z-50">
+<div class="px-6 mb-10 flex flex-col gap-1">
+<span class="text-lg font-black text-blue-600 font-h3">USTED Scholar</span>
+<span class="text-xs font-medium text-gray-500">Academic Portal</span>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="bg-blue-50 text-blue-700 rounded-lg mx-2 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</div>
+<div class="text-gray-600 hover:bg-gray-50 mx-2 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md">Library</span>
+</div>
+<div class="text-gray-600 hover:bg-gray-50 mx-2 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md">Research</span>
+</div>
+<div class="text-gray-600 hover:bg-gray-50 mx-2 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Network</span>
+</div>
+<div class="text-gray-600 hover:bg-gray-50 mx-2 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</div>
+</nav>
+<div class="px-2 mt-auto space-y-1">
+<div class="text-gray-600 hover:bg-gray-50 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md">Help</span>
+</div>
+<div class="text-gray-600 hover:bg-gray-50 flex items-center px-4 py-3 gap-3 transition-all ease-in-out cursor-pointer hover:translate-x-1 duration-200">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md">Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col relative pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-white/70 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center w-full px-6 py-3 border-b border-gray-200/50 font-['Plus_Jakarta_Sans'] antialiased">
+<div class="flex items-center gap-4">
+<button class="md:hidden p-2 hover:bg-gray-100/50 rounded-full transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">USTED Scholar</span>
+</div>
+<div class="hidden md:flex flex-1 max-w-md mx-8">
+<div class="relative w-full group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-gray-100/50 border-none rounded-xl pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary/20 transition-all text-sm" placeholder="Search research topics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-gray-100/50 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-gray-600">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 hover:bg-gray-100/50 rounded-full transition-colors">
+<span class="material-symbols-outlined text-gray-600">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-gray-200">
+<img alt="Scholar Profile" class="h-full w-full object-cover" data-alt="professional headshot of a young African academic researcher in a bright modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnVY03dXL__eJ2cqAICYgE1pson6VhjgWnheWjg9jsVDme6wXToi7493vFricolU1rJV3L1Zsw-zKhXdtslGLZJbyHa_zUQ5Gb8Ka8E8cRUXkPBLImhZOuiimefza2STW9rpUhhNNK82jzYcdjjU-OL_j0QbEXxRoZ9tFy8_RqoWjhGP2ad6oALxU2Z9Q6E-mLuqbz9o0wD5a_rjQlLGkW4SYpCws0Rpeb7EkVcMj_MxFqrpxFM0RSLKqCLlif2jESKy92On6nPeY"/>
+</div>
+</div>
+</header>
+<!-- Quiz Canvas -->
+<main class="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full">
+<!-- Gamified Progress Header -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-4">
+<div>
+<span class="text-secondary font-label-md uppercase tracking-widest block mb-1">Current Session</span>
+<h1 class="font-h2 text-on-surface">Modern Pan-African Economics</h1>
+</div>
+<div class="text-right">
+<span class="font-h3 text-primary">08:45</span>
+<span class="block text-xs font-semibold text-gray-400">TIME REMAINING</span>
+</div>
+</div>
+<div class="relative h-4 w-full bg-surface-container rounded-full overflow-hidden">
+<!-- Progress Gradient Bar -->
+<div class="absolute top-0 left-0 h-full w-[65%] bg-gradient-to-r from-primary to-secondary-container rounded-full transition-all duration-500 shadow-sm"></div>
+</div>
+<div class="flex justify-between mt-2 text-xs font-bold text-gray-500">
+<span>QUESTION 7 OF 12</span>
+<span>65% COMPLETE</span>
+</div>
+</div>
+<!-- Main Bento Layout for Question -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Question Card -->
+<div class="lg:col-span-2 space-y-6">
+<div class="glass border border-gray-200/50 rounded-3xl p-8 shadow-sm">
+<div class="mb-6 flex items-center gap-3">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">ECONOMICS 101</span>
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-bold">HARD</span>
+</div>
+<p class="font-h3 text-on-surface mb-8 leading-relaxed">
+                                Which of the following factors is most critical in driving the "leapfrogging" phenomenon observed in African telecommunications infrastructure over the last decade?
+                            </p>
+<!-- Options -->
+<div class="space-y-4">
+<!-- Option A (Selected) -->
+<button class="w-full text-left p-5 rounded-2xl border-2 border-primary bg-primary/5 flex items-center gap-4 transition-all active:scale-[0.98]">
+<span class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-primary text-white font-bold">A</span>
+<span class="font-body-md font-semibold text-on-surface">Rapid decentralization of wireless technology and infrastructure.</span>
+<span class="material-symbols-outlined ml-auto text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Option B -->
+<button class="w-full text-left p-5 rounded-2xl border border-gray-200 hover:border-primary/50 hover:bg-gray-50/50 flex items-center gap-4 transition-all active:scale-[0.98]">
+<span class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-surface-container text-gray-500 font-bold">B</span>
+<span class="font-body-md text-gray-700">Substantial increase in government subsidies for landline fiber optics.</span>
+</button>
+<!-- Option C -->
+<button class="w-full text-left p-5 rounded-2xl border border-gray-200 hover:border-primary/50 hover:bg-gray-50/50 flex items-center gap-4 transition-all active:scale-[0.98]">
+<span class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-surface-container text-gray-500 font-bold">C</span>
+<span class="font-body-md text-gray-700">The total collapse of regional cross-border trade agreements.</span>
+</button>
+<!-- Option D -->
+<button class="w-full text-left p-5 rounded-2xl border border-gray-200 hover:border-primary/50 hover:bg-gray-50/50 flex items-center gap-4 transition-all active:scale-[0.98]">
+<span class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-surface-container text-gray-500 font-bold">D</span>
+<span class="font-body-md text-gray-700">A decline in foreign direct investment across the tech sector.</span>
+</button>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center justify-between gap-4">
+<button class="px-8 py-4 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors">
+                                Skip for Now
+                            </button>
+<button class="flex-1 bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-blue-700 transition-all active:scale-95">
+                                Submit Answer
+                            </button>
+</div>
+</div>
+<!-- Side Info Panel -->
+<div class="space-y-6">
+<!-- Stats Card -->
+<div class="glass border border-gray-200/50 rounded-3xl p-6 shadow-sm">
+<h4 class="font-label-md text-gray-400 mb-4 uppercase">Academic Performance</h4>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container/50 p-4 rounded-2xl text-center">
+<span class="block text-2xl font-bold text-primary">1,240</span>
+<span class="text-[10px] font-bold text-gray-500 uppercase">Points</span>
+</div>
+<div class="bg-surface-container/50 p-4 rounded-2xl text-center">
+<span class="block text-2xl font-bold text-secondary-container">3x</span>
+<span class="text-[10px] font-bold text-gray-500 uppercase">Streak</span>
+</div>
+</div>
+</div>
+<!-- Hint/Explanation Card (Visible as a prompt) -->
+<div class="relative overflow-hidden group rounded-3xl border border-gray-200/50 bg-white shadow-sm p-6">
+<div class="absolute top-0 right-0 p-3 opacity-10">
+<span class="material-symbols-outlined text-6xl">lightbulb</span>
+</div>
+<h4 class="font-h3 text-on-surface mb-2">Feeling Stuck?</h4>
+<p class="text-sm text-gray-600 mb-4">Use a scholar's hint to narrow down the choices. (Costs 50 Points)</p>
+<button class="w-full py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary font-bold hover:bg-primary/5 transition-colors">
+                                Reveal Hint
+                            </button>
+</div>
+<!-- Progress Summary -->
+<div class="glass border border-gray-200/50 rounded-3xl p-6 shadow-sm">
+<h4 class="font-label-md text-gray-400 mb-4 uppercase">Session History</h4>
+<div class="flex gap-2 flex-wrap">
+<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span></div>
+<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span></div>
+<div class="h-8 w-8 rounded-lg bg-red-400 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">close</span></div>
+<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span></div>
+<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span></div>
+<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span></div>
+<div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white ring-2 ring-primary ring-offset-2 animate-pulse font-bold text-xs">7</div>
+<div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 font-bold text-xs">8</div>
+<div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 font-bold text-xs">9</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Explanation Modal Overlay -->
+<div class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+<div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+<div class="relative bg-white rounded-[32px] max-w-xl w-full shadow-2xl overflow-hidden border border-gray-100">
+<div class="bg-gradient-to-br from-primary to-blue-700 p-8 text-white">
+<div class="flex justify-between items-start mb-4">
+<div class="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<button class="p-2 hover:bg-white/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<h2 class="font-h2 mb-2">Excellent Choice!</h2>
+<p class="opacity-90 font-body-md italic">"Innovation often happens when we stop trying to replicate the past."</p>
+</div>
+<div class="p-8">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest mb-4">The Scholar's Explanation</h4>
+<div class="space-y-4 text-gray-600 leading-relaxed">
+<p>
+                                Technological leapfrogging in Africa occurred as mobile networks bypassed the need for expensive copper-wire landline systems. By adopting wireless solutions first, the continent saved decades of infrastructure development time.
+                            </p>
+<div class="bg-surface-container-low p-4 rounded-2xl border border-gray-200/50 flex gap-4">
+<div class="flex-shrink-0 w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-secondary-container">book</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Related Concept</p>
+<p class="text-sm">Fintech evolution through mobile money (M-Pesa model).</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:translate-y-[-2px] transition-all">
+                            Continue to Question 8
+                        </button>
+</div>
+</div>
+</div>
+<!-- BottomNavBar - Mobile Only -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe pt-2 bg-white/90 backdrop-blur-lg border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center text-blue-600 bg-blue-50/50 rounded-xl px-3 py-1 scale-90 duration-100">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 scale-90 duration-100">
+<span class="material-symbols-outlined">book</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold">Library</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 scale-90 duration-100">
+<span class="material-symbols-outlined">search</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 scale-90 duration-100">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold">Profile</span>
+</div>
+</nav>
+</div>
+</div>
+</body></html>

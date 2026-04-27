@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>USTED Scholar - AI Learning Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#dde1ff",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed-dim": "#ffb68d",
+                        "inverse-on-surface": "#313030",
+                        "on-surface-variant": "#c4c5d9",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#2e5bff",
+                        "on-primary-fixed": "#001356",
+                        "on-primary-container": "#efefff",
+                        "on-surface": "#e5e2e1",
+                        "surface": "#131313",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-primary": "#002388",
+                        "on-tertiary-container": "#f3f0ef",
+                        "tertiary-fixed": "#e5e2e1",
+                        "surface-container-highest": "#353535",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "on-background": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#763300",
+                        "tertiary-container": "#6e6d6d",
+                        "tertiary": "#c9c6c5",
+                        "outline-variant": "#434656",
+                        "surface-tint": "#b8c3ff",
+                        "surface-variant": "#353535",
+                        "surface-dim": "#131313",
+                        "outline": "#8e90a2",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container": "#20201f",
+                        "primary": "#b8c3ff",
+                        "on-error": "#690005",
+                        "inverse-primary": "#124af0",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "on-primary-fixed-variant": "#0035be",
+                        "surface-bright": "#393939",
+                        "on-secondary-container": "#ffe7dc",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#ffb68d",
+                        "on-secondary": "#532200",
+                        "secondary-fixed": "#ffdbc9",
+                        "on-secondary-fixed": "#331200",
+                        "background": "#131313",
+                        "tertiary-fixed-dim": "#c9c6c5",
+                        "secondary-container": "#ae4f00",
+                        "on-tertiary": "#313030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "280px",
+                        "md": "24px",
+                        "sidebar-collapsed": "80px",
+                        "sm": "16px",
+                        "xl": "64px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "lg": "32px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "display-lg": ["Outfit"],
+                        "body-sm": ["Outfit"],
+                        "title-sm": ["Outfit"],
+                        "label-caps": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-surface {
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .premium-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#1A1A1A, #1A1A1A) padding-box,
+                        linear-gradient(to right, #2E5BFF, #FF8C00) border-box;
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(46, 91, 255, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0A0A0A] text-on-background font-body-md min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-30 bg-[#0A0A0A]/50 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#2E5BFF]" style="font-variation-settings: 'FILL' 1;">school</span>
+<h1 class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00] font-headline-md">USTED Scholar</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-gray-400 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</button>
+<div class="w-8 h-8 rounded-full border border-[#2E5BFF]/30 overflow-hidden">
+<img alt="Scholar Avatar" class="w-full h-full object-cover" data-alt="Close up portrait of a young African university student smiling with warm studio lighting and professional aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxv1aAhJWtqatkNdMiAUV50edcXZVpagULcoqew7hhEpX7trHrmPqm9kgaumo9efL5JcNo5y5uJC-SME9Y6SRnlht16s4jBnGZ5Y5emNxOQlTRk7R7JvCLpn1HK3gHe0tXvB1baMyBcRCecvZp05NeA0JTowcB_ypcirCzSageSlL8moNSzIckQNdotsjzXM7A55Qd1yWG9RaMoxwO5oi91DwaANZOWfqnuw6NgRtpFXHnehbg5qMbPhSsNl-iVwZ0HzeSGAQ8k8s"/>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col pb-32">
+<!-- Course Header -->
+<section class="px-6 py-4">
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase bg-[#2E5BFF]/10 text-[#2E5BFF] font-label-caps">Advanced Physics</span>
+<span class="text-gray-500 text-xs font-body-sm">• Module 4</span>
+</div>
+<h2 class="font-headline-md text-title-sm text-on-surface">Quantum Mechanics 101: Wave-Particle Duality</h2>
+</section>
+<!-- Document Viewer Area -->
+<section class="px-4 flex-1">
+<div class="glass-surface rounded-2xl overflow-hidden min-h-[400px] flex flex-col relative">
+<!-- Viewer Controls -->
+<div class="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5">
+<div class="flex items-center gap-2 text-xs font-medium text-gray-300">
+<span class="material-symbols-outlined text-sm">description</span>
+                        Lecture_Notes_04.pdf
+                    </div>
+<div class="flex items-center gap-4 text-gray-400">
+<span class="material-symbols-outlined text-xl">zoom_in</span>
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+</div>
+<!-- Mock PDF Content -->
+<div class="p-6 space-y-6 overflow-y-auto max-h-[442px]">
+<div class="space-y-3 opacity-90">
+<h3 class="text-primary font-title-sm">Introduction to Quantum States</h3>
+<p class="text-body-sm leading-relaxed text-on-surface-variant">
+                            In quantum mechanics, a quantum state is a mathematical entity that provides a probability distribution for the outcomes of each possible measurement on a system. Knowledge of the quantum state together with the rules for the system's evolution in time exhausts all that can be predicted about the system's behavior.
+                        </p>
+<div class="bg-[#1A1A1A] p-4 rounded-xl border border-white/5">
+<code class="text-secondary text-sm">Ψ(x, t) = A e^(i(kx - ωt))</code>
+</div>
+</div>
+<div class="relative rounded-xl overflow-hidden border border-white/5 aspect-video group">
+<img alt="Quantum Physics Visualization" class="w-full h-full object-cover opacity-60" data-alt="Digital visualization of quantum wave patterns in deep blue and purple glowing neon lines against a dark void background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo00m4YDRvqQmVWfFWgUvmrUISUY5QHrdOZDKVGnAI6erQK0CLeRHWEOhXrnz7RbNbJmeWpdpUe1vYK1kgrZ_l-oRG0JVnTKUoXka4maGszVx3S1XJjhG7LvrKavco8dDgXYaN7iA2IIyT5sg8kXJ19KcwnBbRjJCC80xAf56owFkDT9yDfw5x4aa9q6PPF_zPEfjJGN2-T7iMLkga1JsAHumNAdOoHR9Py4h4kIXF69JuBtcT3UmJAzThM_W8gXz5iMtzYltw-DM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<p class="text-[10px] text-gray-400 font-label-caps">Fig 4.1: Interference patterns in a double-slit experiment</p>
+</div>
+</div>
+<div class="space-y-3 opacity-90">
+<h3 class="text-primary font-title-sm">The Schrödinger Equation</h3>
+<p class="text-body-sm leading-relaxed text-on-surface-variant">
+                            The Schrödinger equation is a linear partial differential equation that governs the wave function of a quantum-mechanical system. It is a key result in quantum mechanics, and its discovery was a significant landmark in the development of the subject.
+                        </p>
+</div>
+</div>
+<!-- Learning Progress Glow -->
+<div class="absolute bottom-0 left-0 w-full h-1 bg-white/5">
+<div class="h-full bg-primary w-2/3 glow-blue transition-all duration-1000"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating AI Interface -->
+<div class="fixed bottom-24 left-0 w-full px-6 pointer-events-none z-40">
+<div class="flex flex-col items-end gap-4">
+<!-- Quick Actions -->
+<div class="flex gap-2 pointer-events-auto">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full glass-surface premium-border text-on-surface text-sm font-medium shadow-xl hover:scale-95 duration-150">
+<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                    Summarize
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full glass-surface border-white/10 text-on-surface text-sm font-medium shadow-xl hover:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary text-sm">quiz</span>
+                    Quiz Me
+                </button>
+</div>
+<!-- AI Chat Bubble -->
+<div class="pointer-events-auto flex items-center gap-3">
+<div class="glass-surface p-4 rounded-2xl rounded-tr-none border-[#2E5BFF]/30 shadow-2xl max-w-[280px]">
+<p class="text-xs text-on-surface leading-snug">
+                        "Would you like me to explain the <span class="text-primary font-semibold">Wave-Particle Duality</span> concept using a simpler analogy?"
+                    </p>
+</div>
+<button class="w-14 h-14 rounded-full bg-gradient-to-br from-[#2E5BFF] to-[#001356] flex items-center justify-center shadow-[0_0_20px_rgba(46,91,255,0.4)] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</button>
+</div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-3 bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-white/10 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-gray-400 font-['Outfit'] text-[10px] uppercase tracking-widest active:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#2E5BFF] bg-blue-500/10 rounded-xl px-4 py-1 font-['Outfit'] text-[10px] uppercase tracking-widest transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="mt-1">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-400 font-['Outfit'] text-[10px] uppercase tracking-widest active:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="mt-1">Profile</span>
+</a>
+</nav>
+<!-- SideNavBar (Hidden on Mobile per Rules) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 w-64 h-screen z-40 bg-[#0A0A0A] dark:bg-[#0A0A0A]/90 backdrop-blur-2xl border-r border-white/5 shadow-2xl shadow-blue-900/10 font-['Outfit'] font-medium text-sm">
+<div class="px-6 py-8">
+<h1 class="text-xl font-black tracking-tighter text-white">USTED Scholar</h1>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<div class="flex items-center gap-3 p-3 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 rounded-lg">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</div>
+<div class="flex items-center gap-3 p-3 text-[#2E5BFF] border-l-4 border-[#2E5BFF] bg-blue-500/5 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span>Library</span>
+</div>
+<div class="flex items-center gap-3 p-3 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all duration-200 rounded-lg">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span>Profile</span>
+</div>
+</nav>
+<div class="p-6">
+<button class="w-full py-3 bg-primary-container text-on-primary-container rounded-xl font-bold hover:opacity-90 transition-opacity">
+                Premium AI Access
+            </button>
+</div>
+</aside>
+</body></html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quiz | USTED Scholar</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#124af0",
+                        "on-primary-fixed": "#001356",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "on-primary-container": "#efefff",
+                        "tertiary-fixed-dim": "#c9c6c5",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#b8c3ff",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "secondary-container": "#ae4f00",
+                        "on-secondary-container": "#ffe7dc",
+                        "surface-variant": "#353535",
+                        "inverse-surface": "#e5e2e1",
+                        "primary": "#b8c3ff",
+                        "secondary-fixed-dim": "#ffb68d",
+                        "secondary": "#ffb68d",
+                        "inverse-on-surface": "#313030",
+                        "primary-fixed": "#dde1ff",
+                        "on-tertiary-container": "#f3f0ef",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "on-tertiary": "#313030",
+                        "surface-container-low": "#1c1b1b",
+                        "on-surface-variant": "#c4c5d9",
+                        "on-primary": "#002388",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#393939",
+                        "tertiary-container": "#6e6d6d",
+                        "primary-container": "#2e5bff",
+                        "tertiary": "#c9c6c5",
+                        "surface-dim": "#131313",
+                        "surface-container-lowest": "#0e0e0e",
+                        "error-container": "#93000a",
+                        "surface-container": "#20201f",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#353535",
+                        "surface": "#131313",
+                        "on-secondary-fixed": "#331200",
+                        "secondary-fixed": "#ffdbc9",
+                        "tertiary-fixed": "#e5e2e1",
+                        "outline-variant": "#434656",
+                        "on-secondary": "#532200",
+                        "on-primary-fixed-variant": "#0035be",
+                        "on-secondary-fixed-variant": "#763300",
+                        "background": "#131313",
+                        "on-background": "#e5e2e1",
+                        "outline": "#8e90a2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "quiz": "16px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "sm": "16px",
+                        "sidebar-collapsed": "80px",
+                        "xl": "64px",
+                        "lg": "32px",
+                        "xs": "8px",
+                        "container-max": "1440px",
+                        "sidebar-width": "280px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Outfit"],
+                        "body-sm": ["Outfit"],
+                        "display-lg": ["Outfit"],
+                        "title-sm": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "label-caps": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sunset-glow {
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.2);
+        }
+        .electric-glow {
+            box-shadow: 0 0 20px rgba(46, 91, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-30 bg-[#0A0A0A]/50 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface">
+<span class="material-symbols-outlined">close</span>
+</button>
+<span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00] font-['Outfit']">USTED Scholar</span>
+</div>
+<div class="hidden md:flex flex-1 justify-center max-w-xl px-8">
+<div class="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full w-[65%] bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00] electric-glow"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#FF8C00]" data-weight="fill">local_fire_department</span>
+<span class="font-title-sm text-secondary">12</span>
+<div class="w-10 h-10 rounded-full border border-white/10 overflow-hidden">
+<img alt="Scholar Avatar" class="w-full h-full object-cover" data-alt="Close-up portrait of a young digital artist with neon highlights on their face, professional studio lighting, tech-focused aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYYDuH-_3pT08UtNXuW4PerEUV6jlbpnxpu_9W7YPRgiY-AexwvaMsoiQUDd81037WZV6vRo-K3BUtfbl6qckAgg2ptzbUC6UfYQDjVYJSidolhP-QsH76XZ-4WR0g5JoqG_gy0XsRBqaRNOTC3fMzErkMDpyRW6J5niwCBiCyDDVbFpPc5QlWzrj276mEokOWOaovGAfILD-EEA-IFDXYeIfTpvtejHxenWONmh9FMPvsBhXQKIIB1k5Df-mCUFoLPTZNskPFRJU"/>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] mx-auto px-6 py-8 md:px-lg md:py-xl">
+<!-- Mobile Progress Bar -->
+<div class="md:hidden w-full bg-surface-container-highest rounded-full h-1.5 mb-8 overflow-hidden">
+<div class="h-full w-[65%] bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00]"></div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Question Canvas -->
+<div class="lg:col-span-8 space-y-8">
+<div class="glass-panel rounded-quiz p-8 md:p-10 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-[#FF8C00]/5 blur-3xl rounded-full -mr-16 -mt-16"></div>
+<div class="flex items-center gap-3 mb-6">
+<span class="bg-primary-container/20 text-primary px-3 py-1 rounded-full font-label-caps text-xs">QUESTION 08 OF 12</span>
+<span class="text-on-surface-variant font-body-sm">• Computational Thinking</span>
+</div>
+<h1 class="font-headline-md text-on-surface mb-10 leading-snug">
+                        How does the "Transformer" architecture primarily differ from traditional Recurrent Neural Networks (RNNs) in processing sequences?
+                    </h1>
+<div class="space-y-4">
+<!-- Option A -->
+<button class="w-full group text-left p-6 rounded-quiz border border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary-container transition-all duration-200 flex items-center gap-6">
+<span class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center font-bold text-on-surface group-hover:bg-primary-container group-hover:text-white transition-colors">A</span>
+<span class="font-body-md text-on-surface">It processes tokens sequentially using a hidden state memory.</span>
+</button>
+<!-- Option B (Selected/Active State) -->
+<button class="w-full group text-left p-6 rounded-quiz border-2 border-primary-container bg-primary-container/10 electric-glow flex items-center gap-6">
+<span class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center font-bold text-white">B</span>
+<span class="font-body-md text-on-surface">It uses Self-Attention mechanisms to process entire sequences in parallel.</span>
+<span class="ml-auto material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+</button>
+<!-- Option C -->
+<button class="w-full group text-left p-6 rounded-quiz border border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary-container transition-all duration-200 flex items-center gap-6">
+<span class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center font-bold text-on-surface group-hover:bg-primary-container group-hover:text-white transition-colors">C</span>
+<span class="font-body-md text-on-surface">It relies exclusively on convolutional layers for feature extraction.</span>
+</button>
+<!-- Option D -->
+<button class="w-full group text-left p-6 rounded-quiz border border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary-container transition-all duration-200 flex items-center gap-6">
+<span class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center font-bold text-on-surface group-hover:bg-primary-container group-hover:text-white transition-colors">D</span>
+<span class="font-body-md text-on-surface">It eliminates the need for backpropagation during the training phase.</span>
+</button>
+</div>
+<div class="mt-10 flex justify-between items-center">
+<button class="flex items-center gap-2 text-on-surface-variant font-label-caps hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">flag</span>
+                            REPORT ISSUE
+                        </button>
+<button class="bg-primary-container text-white px-8 py-4 rounded-quiz font-title-sm hover:brightness-110 transition-all electric-glow active:scale-95">
+                            SUBMIT ANSWER
+                        </button>
+</div>
+</div>
+</div>
+<!-- Gamification & Stats Sidebar -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Streak Card -->
+<div class="glass-panel rounded-quiz p-6 border-l-4 border-secondary">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-3xl" data-weight="fill">bolt</span>
+<div>
+<h3 class="font-title-sm text-on-surface">On Fire!</h3>
+<p class="text-body-sm text-on-surface-variant">5 Correct Answers Streak</p>
+</div>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="h-1 flex-1 bg-secondary rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary rounded-full"></div>
+<div class="h-1 flex-1 bg-secondary rounded-full"></div>
+<div class="h-1 flex-1 bg-surface-container-highest rounded-full"></div>
+</div>
+</div>
+<!-- Bento Info Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-panel rounded-quiz p-6 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">timer</span>
+<span class="font-headline-md text-on-surface">0:45</span>
+<span class="font-label-caps text-on-surface-variant text-[10px]">TIME LEFT</span>
+</div>
+<div class="glass-panel rounded-quiz p-6 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary mb-2">stars</span>
+<span class="font-headline-md text-on-surface">+150</span>
+<span class="font-label-caps text-on-surface-variant text-[10px]">POTENTIAL XP</span>
+</div>
+</div>
+<!-- Tip Card -->
+<div class="glass-panel rounded-quiz p-6 bg-gradient-to-br from-primary-container/10 to-transparent">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h4 class="font-label-caps text-primary">SCHOLAR TIP</h4>
+</div>
+<p class="text-body-sm text-on-surface/80 italic">
+                        "Transformers use 'Multi-Head Attention' to focus on different parts of the input sentence simultaneously."
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Explanation Modal Overlay -->
+<div class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm">
+<div class="max-w-2xl w-full glass-panel rounded-quiz p-8 md:p-10 relative sunset-glow overflow-hidden">
+<!-- Decorative Glow -->
+<div class="absolute -top-24 -left-24 w-64 h-64 bg-secondary/10 blur-[100px] rounded-full"></div>
+<div class="flex items-start justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-4xl" data-weight="fill">lightbulb</span>
+</div>
+<div>
+<h2 class="font-headline-md text-secondary">Excellent Analysis!</h2>
+<p class="text-on-surface-variant font-body-sm">Option B is correct.</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="space-y-6">
+<div class="p-6 bg-white/5 rounded-xl border border-white/5">
+<h4 class="font-title-sm text-on-surface mb-3">Deep Explanation</h4>
+<p class="font-body-md text-on-surface-variant leading-relaxed">
+                        Unlike RNNs that process data step-by-step (linearly), <strong class="text-on-surface">Transformers</strong> employ an attention mechanism that allows them to weigh the significance of each part of the input data regardless of its position in the sequence. This "parallelization" is what makes them significantly faster to train and more effective at capturing long-range dependencies in text.
+                    </p>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-lg bg-primary-container/5 border border-primary-container/20">
+<span class="material-symbols-outlined text-primary">school</span>
+<p class="text-body-sm text-primary">Recommended Resource: "Attention is All You Need" (Vaswani et al.)</p>
+</div>
+</div>
+<div class="mt-10 flex gap-4">
+<button class="flex-1 py-4 border border-white/10 rounded-quiz font-title-sm hover:bg-white/5 transition-colors">
+                    REVIEW AGAIN
+                </button>
+<button class="flex-1 py-4 bg-gradient-to-r from-secondary-container to-[#FF8C00] text-white rounded-quiz font-title-sm hover:brightness-110 sunset-glow transition-all active:scale-95">
+                    CONTINUE QUIZ
+                </button>
+</div>
+</div>
+</div>
+</body></html>

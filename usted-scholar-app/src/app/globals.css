@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-red: #8C033B;
+  --color-accent-gold: #FFCC22;
+  
+  --color-bg-light: #FFFFFF;
+  --color-bg-dark: #0D0D0D;
+  
+  --color-surface-dark: #1A1A1A;
+  
+  --color-text-light: #0D0D0D;
+  --color-text-dark: #FFFFFF;
+
+  --font-sans: var(--font-outfit), sans-serif;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-main: var(--color-bg-light);
+    --text-main: var(--color-text-light);
+    --surface-main: var(--color-bg-light);
+    --surface-border: rgba(0, 0, 0, 0.1);
+  }
+
+  .dark {
+    --bg-main: var(--color-bg-dark);
+    --text-main: var(--color-text-dark);
+    --surface-main: var(--color-surface-dark);
+    --surface-border: rgba(255, 255, 255, 0.05);
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .glass-card {
+    background: var(--surface-main);
+    border: 1px solid var(--surface-border);
+    backdrop-filter: blur(12px);
+  }
+  .dark .glass-card {
+    background: rgba(26, 26, 26, 0.6);
+  }
+  .bg-main {
+    background-color: var(--bg-main);
+  }
+  .text-main {
+    color: var(--text-main);
+  }
+  .surface-main {
+    background-color: var(--surface-main);
+  }
+
+  /* Premium dark custom scrollbar for chat/summary panels */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 100px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}

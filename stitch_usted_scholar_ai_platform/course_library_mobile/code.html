@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>USTED Scholar - Course Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#dde1ff",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed-dim": "#ffb68d",
+                        "inverse-on-surface": "#313030",
+                        "on-surface-variant": "#c4c5d9",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#2e5bff",
+                        "on-primary-fixed": "#001356",
+                        "on-primary-container": "#efefff",
+                        "on-surface": "#e5e2e1",
+                        "surface": "#131313",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-primary": "#002388",
+                        "on-tertiary-container": "#f3f0ef",
+                        "tertiary-fixed": "#e5e2e1",
+                        "surface-container-highest": "#353535",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "on-background": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#763300",
+                        "tertiary-container": "#6e6d6d",
+                        "tertiary": "#c9c6c5",
+                        "outline-variant": "#434656",
+                        "surface-tint": "#b8c3ff",
+                        "surface-variant": "#353535",
+                        "surface-dim": "#131313",
+                        "outline": "#8e90a2",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container": "#20201f",
+                        "primary": "#b8c3ff",
+                        "on-error": "#690005",
+                        "inverse-primary": "#124af0",
+                        "primary-fixed-dim": "#b8c3ff",
+                        "on-primary-fixed-variant": "#0035be",
+                        "surface-bright": "#393939",
+                        "on-secondary-container": "#ffe7dc",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary": "#ffb68d",
+                        "on-secondary": "#532200",
+                        "secondary-fixed": "#ffdbc9",
+                        "on-secondary-fixed": "#331200",
+                        "background": "#131313",
+                        "tertiary-fixed-dim": "#c9c6c5",
+                        "secondary-container": "#ae4f00",
+                        "on-tertiary": "#313030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "280px",
+                        "md": "24px",
+                        "sidebar-collapsed": "80px",
+                        "sm": "16px",
+                        "xl": "64px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "lg": "32px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "display-lg": ["Outfit"],
+                        "body-sm": ["Outfit"],
+                        "title-sm": ["Outfit"],
+                        "label-caps": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            font-family: 'Outfit', sans-serif;
+        }
+        .glass-card {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .active-module-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .active-module-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(46, 91, 255, 0.3);
+        }
+        .gradient-text-pan {
+            background: linear-gradient(to right, #2E5BFF, #FF8C00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-30 bg-[#0A0A0A]/50 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center gap-3">
+<span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00] font-headline-md">USTED Scholar</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-gray-400 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications_active</span>
+</button>
+<button class="text-gray-400 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">auto_awesome</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary-container">
+<img alt="Scholar Avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a young African university student smiling confidently with a professional tech-focused aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCC_YNSM-upJVWvmghu9o2m2RKmcDqyZF2JfADhL-HZN4WJHL1p1aNlZNC02pQdQOZTMCmEaawHwoW0Ll20HGD7sI4b_u0dQaf5hrA4nh75G-Vpae1gc590Tu0HMW_YOPb6y_bgdzWGFCCsbHnCkbPmN5ZMRqfFKOb_P6wW-7zY3dNJ9Szgov6n39QRX14sHE7rYAwulFzZzLMSvHxo7Xn9t7F95hVa8OpCqgh4822B21LjpziBqK3OuGcwq-B_hMyqqeNK1wyWSCE"/>
+</div>
+</div>
+</header>
+<main class="px-6 py-8">
+<!-- Hero Progress Section -->
+<section class="mb-10">
+<h1 class="font-headline-md text-headline-md mb-6 leading-tight">Continue your Scholarly Journey</h1>
+<div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+<!-- Background Accent Glow -->
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-secondary-container/10 blur-3xl rounded-full"></div>
+<div class="flex justify-between items-end mb-4">
+<div>
+<p class="font-label-caps text-label-caps text-secondary uppercase mb-1">Overall Progress</p>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg text-on-surface">64</span>
+<span class="text-title-sm text-primary">%</span>
+</div>
+</div>
+<div class="text-right">
+<p class="font-body-sm text-body-sm text-on-surface-variant">4/6 Modules</p>
+<p class="font-body-sm text-body-sm text-primary">On Track</p>
+</div>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mb-2">
+<div class="bg-primary-container h-full rounded-full glow-blue" style="width: 64%"></div>
+</div>
+</div>
+</section>
+<!-- Active Modules (Netflix Scroll) -->
+<section class="mb-10">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-title-sm text-title-sm">Active Modules</h2>
+<button class="text-primary text-body-sm font-medium">View All</button>
+</div>
+<div class="active-module-scroll flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
+<!-- Card 1: Research Methods -->
+<div class="min-w-[280px] glass-card rounded-2xl overflow-hidden flex flex-col group active:scale-95 transition-transform duration-150">
+<div class="h-40 relative">
+<img alt="Research Methods" class="w-full h-full object-cover" data-alt="modern library study space with books and digital tablets in soft cool morning light, academic research atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaSKGQMtqOf2GI_dc-wDG5ekayDPRXZdpsFXqjdWZ5P_iYpHAi36jH61C0fY8w_Thn7MNrn3tk7qo05q25BOyxwfu4slwcqYs5_HCPtqJZ4fKxhTSlSBipHU_Aq41BVcCl-Kcqkx_bgs7A06fSseoJHLyJ6qhoQIm1gpDO3hmTPD7KZvyF6nvjBcMEQM6_b2dS1QPO4-ssb6bzbi5xl70nmGGP4m6fC7NwlWirJXJ9QW3-1Z1N_ixNcM0FJf5ETpU6vB814e2sm7Y"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="bg-primary-container/20 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border border-primary-container/30">Science</span>
+</div>
+</div>
+<div class="p-5">
+<h3 class="font-title-sm text-body-md font-bold mb-4">Research Methods</h3>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-[10px] font-label-caps uppercase text-on-surface-variant">
+<span>Knowledge Loaded</span>
+<span class="text-secondary">82%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1">
+<div class="bg-secondary h-full rounded-full" style="width: 82%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: ITE 354 -->
+<div class="min-w-[280px] glass-card rounded-2xl overflow-hidden flex flex-col group active:scale-95 transition-transform duration-150">
+<div class="h-40 relative">
+<img alt="ITE 354" class="w-full h-full object-cover" data-alt="abstract technological circuit board with electric blue glowing lines and high-tech digital elements" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNjTPNg4VZtYD_lcKiWcmAJUyDgFhJw7YFCElllWsAEJMH0VwrGUvC5PEom_qTC4ZucnFDixdn6vFKFh2thSlb1TwiSUG-rlCqKcjTcx3JKBOzpCC8_WDLddxhI04v_Ocx8g8p2q84X7hCQsDrSor_S7WH9a4uNuU5dIsWJPod_TS6caDeebFSpdUdVI3YFbrBP7LiQEeRWxK3xfubAw7JNHkFwewNafvcwQhxazJq9xfTH2UsV8RCJJjjiCs4DHSDYT02WE7gGVE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="bg-secondary-container/20 text-secondary-fixed-dim px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border border-secondary-container/30">Tech</span>
+</div>
+</div>
+<div class="p-5">
+<h3 class="font-title-sm text-body-md font-bold mb-4">ITE 354: Architecture</h3>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-[10px] font-label-caps uppercase text-on-surface-variant">
+<span>Knowledge Loaded</span>
+<span class="text-secondary">45%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1">
+<div class="bg-secondary h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Methods of Teaching IT -->
+<div class="min-w-[280px] glass-card rounded-2xl overflow-hidden flex flex-col group active:scale-95 transition-transform duration-150">
+<div class="h-40 relative">
+<img alt="Methods of Teaching IT" class="w-full h-full object-cover" data-alt="blurred lecture hall background with a digital presentation screen showing educational icons in warm sunset orange tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO1OgiWeNIUQIEyz2_vyta5hPrWuh7Io7UJm8XY6_PSLPlQHJJDDfYlixVgdNdZLPQyC8Iobvi5khY1XDUaLu4nej-ctmed41H7in1go5MTeB34_B4OfmLes9_i0h_l8KIBhA0O5LP2h6bi5HAyFMcHMkKq-NLdCMsBRcjHJBKCbKIJ5IFFaAjg6cQexjnfHvZb4bMrRqye5ka1CFEEuJoy_1yzw_VZ3kS3k9qiQd7gPYYehkSy5fQs-lhprb6ez34pDkIQhmByQ0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<span class="bg-tertiary-container/20 text-tertiary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border border-tertiary-container/30">Education</span>
+</div>
+</div>
+<div class="p-5">
+<h3 class="font-title-sm text-body-md font-bold mb-4">Methods of Teaching IT</h3>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-[10px] font-label-caps uppercase text-on-surface-variant">
+<span>Knowledge Loaded</span>
+<span class="text-secondary">28%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1">
+<div class="bg-secondary h-full rounded-full" style="width: 28%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended Learning (Bento Section) -->
+<section>
+<h2 class="font-title-sm text-title-sm mb-4">Deep Dives for You</h2>
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 glass-card rounded-2xl p-5 border-l-4 border-primary">
+<div class="flex items-start justify-between">
+<div>
+<span class="text-[10px] font-bold text-primary uppercase mb-1 block">Quick Read</span>
+<h4 class="font-headline-sm text-body-md font-semibold">AI Ethics in West Africa</h4>
+<p class="text-body-sm text-on-surface-variant mt-2">12 min read • 400 XP</p>
+</div>
+<span class="material-symbols-outlined text-primary">auto_awesome</span>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/20 flex items-center justify-center mb-3 text-secondary">
+<span class="material-symbols-outlined">quiz</span>
+</div>
+<p class="text-[12px] font-bold leading-tight">Daily Quiz</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Earn 50 Points</p>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center text-center">
+<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center mb-3 text-primary">
+<span class="material-symbols-outlined">forum</span>
+</div>
+<p class="text-[12px] font-bold leading-tight">Study Group</p>
+<p class="text-[10px] text-on-surface-variant mt-1">2 Active Now</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-3 bg-[#0A0A0A]/80 backdrop-blur-lg rounded-t-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-gray-400 active:bg-white/5" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#2E5BFF] bg-blue-500/10 rounded-xl px-4 py-1 active:bg-white/5" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-400 active:bg-white/5" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

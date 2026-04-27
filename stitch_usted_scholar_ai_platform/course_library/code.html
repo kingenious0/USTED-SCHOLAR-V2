@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "inverse-primary": "#124af0",
+                "on-primary-fixed": "#001356",
+                "on-surface": "#e5e2e1",
+                "on-tertiary-fixed-variant": "#474646",
+                "on-primary-container": "#efefff",
+                "tertiary-fixed-dim": "#c9c6c5",
+                "on-error-container": "#ffdad6",
+                "surface-tint": "#b8c3ff",
+                "error": "#ffb4ab",
+                "on-tertiary-fixed": "#1c1b1b",
+                "secondary-container": "#ae4f00",
+                "on-secondary-container": "#ffe7dc",
+                "surface-variant": "#353535",
+                "inverse-surface": "#e5e2e1",
+                "primary": "#b8c3ff",
+                "secondary-fixed-dim": "#ffb68d",
+                "secondary": "#ffb68d",
+                "inverse-on-surface": "#313030",
+                "primary-fixed": "#dde1ff",
+                "on-tertiary-container": "#f3f0ef",
+                "primary-fixed-dim": "#b8c3ff",
+                "on-tertiary": "#313030",
+                "surface-container-low": "#1c1b1b",
+                "on-surface-variant": "#c4c5d9",
+                "on-primary": "#002388",
+                "surface-container-high": "#2a2a2a",
+                "surface-bright": "#393939",
+                "tertiary-container": "#6e6d6d",
+                "primary-container": "#2e5bff",
+                "tertiary": "#c9c6c5",
+                "surface-dim": "#131313",
+                "surface-container-lowest": "#0e0e0e",
+                "error-container": "#93000a",
+                "surface-container": "#20201f",
+                "on-error": "#690005",
+                "surface-container-highest": "#353535",
+                "surface": "#131313",
+                "on-secondary-fixed": "#331200",
+                "secondary-fixed": "#ffdbc9",
+                "tertiary-fixed": "#e5e2e1",
+                "outline-variant": "#434656",
+                "on-secondary": "#532200",
+                "on-primary-fixed-variant": "#0035be",
+                "on-secondary-fixed-variant": "#763300",
+                "background": "#131313",
+                "on-background": "#e5e2e1",
+                "outline": "#8e90a2"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "base": "4px",
+                "sm": "16px",
+                "sidebar-collapsed": "80px",
+                "xl": "64px",
+                "lg": "32px",
+                "xs": "8px",
+                "container-max": "1440px",
+                "sidebar-width": "280px",
+                "md": "24px"
+            },
+            "fontFamily": {
+                "body-md": ["Outfit"],
+                "body-sm": ["Outfit"],
+                "display-lg": ["Outfit"],
+                "title-sm": ["Outfit"],
+                "headline-md": ["Outfit"],
+                "label-caps": ["Outfit"]
+            },
+            "fontSize": {
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "title-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-card {
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(46, 91, 255, 0.15);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #2E5BFF 0%, #FF8C00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-30 bg-[#0A0A0A]/50 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#2E5BFF] to-[#FF8C00] font-['Outfit']">USTED Scholar</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="hidden md:flex items-center bg-surface-container rounded-full px-4 py-2 border border-white/5">
+<span class="material-symbols-outlined text-outline text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface w-64" placeholder="Search courses..." type="text"/>
+</div>
+<button class="p-2 text-gray-400 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</button>
+<button class="p-2 text-gray-400 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="Scholar Avatar" class="h-full w-full object-cover" data-alt="Close-up portrait of a young student with a warm expression, soft cinematic lighting, dark focused studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGDcHR6ygrLGDwsYxOoVjxDcJzCkIts4LAp5d9Nmnqfvvn0QWEtI_Zpvyjr0F0kmyip64JlSdZuTYePaSC46NQZ5qxnS7X_Li7zG3ngttrrx3yIdBLOTFD9qdfMw2Sp9U1HTZNGNMS7mGRy80mS4P7KnPVuDg2FRxYVs3hkNdp4j4g7MwI58MvX7ZhfIQV79qjVxcoEq0-iAtDabTt9sTJiPBl-r0TK7tGUQu8uxPGQVLVoAAxKPTN_KUS_DYD8quQ-WEOJ935qwU"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 w-64 z-40 bg-[#0A0A0A] dark:bg-[#0A0A0A]/90 backdrop-blur-2xl h-screen border-r border-white/5 rounded-r-2xl shadow-2xl shadow-blue-900/10">
+<div class="p-6">
+<h2 class="text-xl font-black tracking-tighter text-white font-['Outfit']">USTED</h2>
+<p class="text-xs text-gray-500 font-medium font-['Outfit']">Tech-Modern Learning</p>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Outfit'] font-medium text-sm">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-[#2E5BFF] border-l-4 border-[#2E5BFF] bg-blue-500/5 font-['Outfit'] font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Outfit'] font-medium text-sm">Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-['Outfit'] font-medium text-sm">Profile</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="bg-gradient-to-br from-primary-container to-blue-900/20 p-4 rounded-2xl border border-white/10">
+<p class="text-white text-sm font-bold mb-2">Premium AI Access</p>
+<p class="text-white/60 text-xs mb-3">Unlock advanced research tools and AI tutoring.</p>
+<button class="w-full py-2 bg-white text-on-primary-fixed rounded-lg text-xs font-bold hover:scale-[0.98] transition-transform">Upgrade Now</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="md:ml-64 px-6 pt-8 pb-32 max-w-[1440px]">
+<!-- Hero Section -->
+<section class="mb-12">
+<div class="relative overflow-hidden rounded-[2rem] h-64 flex items-center p-12 bg-[#1A1A1A] border border-white/5 glow-blue">
+<div class="absolute inset-0 opacity-40 bg-gradient-to-r from-black via-transparent to-transparent z-10"></div>
+<div class="absolute right-0 top-0 w-1/2 h-full opacity-30 z-0">
+<img alt="Education Abstract" class="object-cover h-full w-full" data-alt="Vibrant abstract digital art showing glowing particles of light forming a network pattern, electric blue and sunset orange colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQxcsAnS-EH9tky93Ps1zQlzWgSXM15muDMx1PfGlTo2p3PDT4LcRvJI8WWxmZujO9alDxFbkmTSnODyqioURa4yXym7_CcUOa4oy7FGml1EgKv688Kj0De7MpZF19KtPImqPYmR9jilzR1bNGj3GyWLKK74ij--IZyzJ8pWwX7QG0ACbm2PihuV42U-m1VsGe2WgIZnAq1fVeENWr1HhxYIKJ1Ud_roTtnkJssWwgsJOygEMKi_JvkhNXwmW72I80GcmanfRWk_4"/>
+</div>
+<div class="relative z-20 max-w-xl">
+<span class="inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest mb-4">Summer Term 2024</span>
+<h1 class="font-display-lg text-display-lg mb-2">Continue your <span class="gradient-text">Scholarly Journey</span></h1>
+<p class="text-on-surface-variant font-body-md">You've completed 64% of your current modules. Stay focused.</p>
+</div>
+</div>
+</section>
+<!-- Course Row 1: Active Modules -->
+<section class="mb-12">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md">Active Modules</h2>
+<p class="text-on-surface-variant text-body-sm">Your primary academic focus areas</p>
+</div>
+<button class="text-primary text-body-sm font-bold flex items-center gap-1 hover:underline">
+                    View All <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<!-- Netflix style horizontal scroll -->
+<div class="flex gap-6 overflow-x-auto no-scrollbar pb-6 -mx-2 px-2">
+<!-- Course Card: Research Methods -->
+<div class="flex-none w-72 group">
+<div class="glass-card rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/30 h-full flex flex-col">
+<div class="relative h-40">
+<img alt="Research Methods" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="Close up of a person writing in a notebook with clinical precision, glasses on a mahogany desk, dark academic setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMgIX0j5-mUrgKwpD4FKOl-Hw9RWQS7b3JxBfz30oKQy6RmKF4aT-obZUUKEUjAaOMaM78wPmyCFoZ58XdDBVTt-1sbOjktjenunmvunn-nyo8E1KhsbuEIOrNiOtyjrI-VVwMLD9knKr6nLYFeSbtwXguLC1DIORiRhwYbeAniiVfi2NjKTjunx_YxsrwzrnS0Tnl4s4ySzh9RaS9eDW-U6RyPtveLPCLaDdp_GK0N0X8rlmKItKrXh1Wr7Q1fPapieT2Ik-zHXI"/>
+<div class="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/10 uppercase">Advanced</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<h3 class="font-title-sm text-title-sm mb-1">Research Methods</h3>
+<p class="text-xs text-on-surface-variant mb-4">Dr. Sarah Mensah • Module 4</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] text-primary font-bold uppercase tracking-widest">Knowledge Loaded</span>
+<span class="text-[10px] text-white">72%</span>
+</div>
+<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_8px_#2E5BFF] rounded-full" style="width: 72%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Course Card: ITE 354 -->
+<div class="flex-none w-72 group">
+<div class="glass-card rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/30 h-full flex flex-col">
+<div class="relative h-40">
+<img alt="ITE 354" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="Digital representation of complex computer architecture with glowing blue lines and data nodes on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBor4ukg-wPIZkxrx0LockbwzbxTyV47t6WL3Ia9BiVHeP4DmgjWK5XF-iY9d3h7k5jEm0eTqnSJaMOoqmNkvhArYkDkVIzalKXRqPRiJgow4zxU0-eyB0GrFoX9EMTTxEWFb7FzD8grekDc17d55gz6CMJ4xHniViiqf1tjVCQm-EkvYppx4wnZiot3sUq4AP4ocVZSepc8LGrkeb8TVP0HbGYZErEhZinNYH_4yWl3e5SsqiWN9OGIslcX45pd0Annj5GtgG0dUY"/>
+<div class="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/10 uppercase">Technical</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<h3 class="font-title-sm text-title-sm mb-1">ITE 354</h3>
+<p class="text-xs text-on-surface-variant mb-4">Prof. Koffi Adams • Network Arch</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] text-primary font-bold uppercase tracking-widest">Knowledge Loaded</span>
+<span class="text-[10px] text-white">45%</span>
+</div>
+<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_8px_#2E5BFF] rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Course Card: Methods of Teaching IT -->
+<div class="flex-none w-72 group">
+<div class="glass-card rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/30 h-full flex flex-col">
+<div class="relative h-40">
+<img alt="Teaching IT" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="Modern classroom setting with a digital whiteboard showing coding diagrams, soft ambient lighting, high tech education" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDA7591jCaYs635piO32vOFhC8Pdzb1Ne-PZFR3bkQnpjNXV0Bt6wDUuevi6nAiDe886KAyl13mYDkqyJ9uv-27Jgk2M64P9ZKUlPXnIEL_mbGcCVi4BnzNsm7ulfoV_8OehQKPsnYXXm63wNqkgaIwPrPCJfFs_HqO7bVKME8W7SXgi62nQ7hW4UN2-ncCLCyFE0wCnckj9VJqbyHZKMkFEQWLO2NA2Oi79_9VLoKz0nny4gkDFyahgqa5pJfSSXrVHWANBeGYVjY"/>
+<div class="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/10 uppercase">Pedagogy</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<h3 class="font-title-sm text-title-sm mb-1">Methods of Teaching IT</h3>
+<p class="text-xs text-on-surface-variant mb-4">Ms. Amina Bello • Interactive Edu</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] text-primary font-bold uppercase tracking-widest">Knowledge Loaded</span>
+<span class="text-[10px] text-white">88%</span>
+</div>
+<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_8px_#2E5BFF] rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Course Card: Fundamentals of Operating Systems -->
+<div class="flex-none w-72 group">
+<div class="glass-card rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02] group-hover:border-primary/30 h-full flex flex-col">
+<div class="relative h-40">
+<img alt="Operating Systems" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="Macro photo of a computer processor chip glowing with blue and amber light, highly detailed circuit traces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVjGRtfQUqf1-OJ7-FHpXfAHDZfZcvKvoa3P40d_DFf5vS4PPFMz51jENxM6xGPGmZU9GdPAdDn2PZvPkjC40TUUdLC78gzPlzAT_0hzZRshG6meXSPWJIyyyTgxoasXM39_9ySd_vtO5DHQ0mYBYowX4CIeajjhiq1VhFjx0HmwlaxRbRda-EhT6FnC89JEAO7gqZL1j5zVgEUR5U1wZzil1Kn3-M62vhaLxffRTXBuH5VDeWhU3eJ5W815X_2IKZ9ZQ0WQzci84"/>
+<div class="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/10 uppercase">Core</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<h3 class="font-title-sm text-title-sm mb-1">Fundamentals of Operating Systems</h3>
+<p class="text-xs text-on-surface-variant mb-4">Dr. Kwame Tetteh • Kernel Dev</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[10px] text-primary font-bold uppercase tracking-widest">Knowledge Loaded</span>
+<span class="text-[10px] text-white">12%</span>
+</div>
+<div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_8px_#2E5BFF] rounded-full" style="width: 12%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid for Stats & Recommendations -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 glass-card rounded-2xl p-8 flex flex-col justify-center">
+<div class="flex items-center gap-4 mb-6">
+<div class="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div>
+<h4 class="font-title-sm text-title-sm">Learning Velocity</h4>
+<p class="text-on-surface-variant text-body-sm">You are learning 15% faster than last month.</p>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+<p class="text-primary font-bold text-2xl">24</p>
+<p class="text-[10px] uppercase text-on-surface-variant tracking-wider">Hours Studied</p>
+</div>
+<div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+<p class="text-secondary font-bold text-2xl">8</p>
+<p class="text-[10px] uppercase text-on-surface-variant tracking-wider">Modules Done</p>
+</div>
+<div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
+<p class="text-white font-bold text-2xl">4.8</p>
+<p class="text-[10px] uppercase text-on-surface-variant tracking-wider">Current GPA</p>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-6 border-l-4 border-secondary">
+<h4 class="font-title-sm text-title-sm mb-4">AI Suggestion</h4>
+<div class="flex gap-4 items-start mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="lightbulb">lightbulb</span>
+<p class="text-body-sm text-on-surface-variant">Based on your performance in <span class="text-white font-medium">ITE 354</span>, we recommend reviewing "Network Security Fundamentals" next.</p>
+</div>
+<button class="w-full py-3 bg-secondary/10 border border-secondary/30 text-secondary rounded-xl text-xs font-bold hover:bg-secondary/20 transition-colors">Start Review</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-3 bg-[#0A0A0A]/80 backdrop-blur-lg rounded-t-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center justify-center text-gray-400 active:bg-white/5" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#2E5BFF] bg-blue-500/10 rounded-xl px-4 py-1 active:bg-white/5" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-400 active:bg-white/5" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Outfit'] text-[10px] uppercase tracking-widest mt-1">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button (Only on Home/Dashboard, but keeping for stylistic completion if needed elsewhere) -->
+<!-- Suppressed on Library screen per rules, as this is a list-type sub-page -->
+</body></html>
