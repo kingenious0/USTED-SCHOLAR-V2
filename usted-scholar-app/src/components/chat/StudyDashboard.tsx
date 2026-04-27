@@ -116,8 +116,8 @@ export function StudyDashboard({ fileId, title }: { fileId: string; title: strin
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-12 relative custom-scrollbar">
-        <div className="max-w-3xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-6 sm:px-12 py-8 sm:py-16 relative custom-scrollbar overscroll-contain">
+        <div className="max-w-4xl mx-auto w-full">
           <h2 className="text-[#FF8C00] text-xs font-bold tracking-[0.2em] uppercase mb-6">
             {tabLabels[activeTab]}
           </h2>

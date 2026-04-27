@@ -54,6 +54,8 @@ Only return the JSON array, no other text.`;
     });
 
     const text = result.text;
+    if (!text) throw new Error("No response from AI");
+    
     const jsonStr = text.match(/\[.*\]/s)?.[0] || text;
     const quiz = JSON.parse(jsonStr);
 

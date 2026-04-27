@@ -97,7 +97,7 @@ export function LibraryClient({ courses, program, level, semester }: LibraryClie
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-gray-50 dark:bg-[#050505] transition-colors duration-300">
+      <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-[#050505] transition-colors duration-300">
 
         {/* Top Nav Bar */}
         <header className="sticky top-0 z-30 h-[72px] flex items-center justify-between px-8 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-black/8 dark:border-white/5 shrink-0 transition-colors duration-300">
