@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -7,7 +8,8 @@ import { CheckCircle2, Flame, Award, Timer, Lightbulb, ArrowRight, X, Sparkles, 
 import { generateQuiz } from '../lib/ai';
 
 export default function QuizScreen() {
-  const { setScreen, selectedFile } = useApp();
+  const { selectedFile } = useApp();
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -20,7 +22,7 @@ export default function QuizScreen() {
     async function loadQuiz() {
       const targetId = selectedFile?.file_id || selectedFile?.id;
       if (!targetId) {
-        setScreen('library');
+        navigate('/library');
         return;
       }
       try {
@@ -33,7 +35,7 @@ export default function QuizScreen() {
       }
     }
     loadQuiz();
-  }, [selectedFile]);
+  }, [selectedFile, navigate]);
 
   const handleSubmit = () => {
     if (selectedOption !== null) {
@@ -55,10 +57,10 @@ export default function QuizScreen() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
        <div className="w-20 h-20 relative mb-8">
-          <div className="absolute inset-0 bg-electric-blue/20 blur-2xl rounded-full animate-pulse" />
-          <Loader2 className="w-20 h-20 text-electric-blue animate-spin relative z-10" />
+          <div className="absolute inset-0 bg-[#2E5BFF]/20 blur-2xl rounded-full animate-pulse" />
+          <Loader2 className="w-20 h-20 text-[#2E5BFF] animate-spin relative z-10" />
        </div>
        <h2 className="text-2xl font-black text-white mb-2">AI is drafting your exam...</h2>
        <p className="text-white/40 font-bold uppercase tracking-widest text-xs">Analyzing {selectedFile?.name || 'lecture material'}</p>
@@ -66,25 +68,25 @@ export default function QuizScreen() {
   );
 
   if (showResults) return (
-    <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
        <motion.div 
          initial={{ scale: 0.9, opacity: 0 }}
          animate={{ scale: 1, opacity: 1 }}
-         className="glass-card p-12 rounded-[3rem] max-w-md w-full relative overflow-hidden"
+         className="bg-[#0A0A0A] p-12 rounded-[3rem] max-w-md w-full relative overflow-hidden border border-white/5"
        >
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-sunset-orange/20 blur-3xl rounded-full" />
-         <Trophy className="w-24 h-24 text-sunset-orange mx-auto mb-6 relative z-10" />
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#FFCC22]/20 blur-3xl rounded-full" />
+         <Trophy className="w-24 h-24 text-[#FFCC22] mx-auto mb-6 relative z-10" />
          <h2 className="text-4xl font-black text-white mb-2 relative z-10">Mastery Level</h2>
-         <div className="text-6xl font-black text-electric-blue mb-8">{(score / questions.length) * 100}%</div>
+         <div className="text-6xl font-black text-[#2E5BFF] mb-8">{(score / questions.length) * 100}%</div>
          <p className="text-white/60 font-medium mb-10 leading-relaxed">
             You got {score} out of {questions.length} questions correct. Your mastery of {selectedFile?.name} is growing!
          </p>
-         <button 
-           onClick={() => setScreen('dashboard')}
-           className="w-full py-5 bg-electric-blue text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-electric-blue/20"
+         <Link 
+           to="/dashboard"
+           className="w-full block py-5 bg-[#2E5BFF] text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-[#2E5BFF]/20"
          >
            Finish Session
-         </button>
+         </Link>
        </motion.div>
     </div>
   );
@@ -92,34 +94,34 @@ export default function QuizScreen() {
   const currentQ = questions[currentIndex];
 
   return (
-    <div className="min-h-[100dvh] bg-background-dark flex flex-col p-6 lg:p-12 relative overflow-hidden pb-24 lg:pb-0">
+    <div className="min-h-[100dvh] bg-[#050505] flex flex-col p-6 lg:p-12 relative overflow-hidden pb-24 lg:pb-0">
       {/* Top Bar */}
       <header className="flex justify-between items-center mb-12 relative z-10">
-        <button 
-          onClick={() => setScreen('hub')}
+        <Link 
+          to="/hub"
           className="p-2 text-zinc-500 hover:text-white transition-all"
         >
           <X className="w-6 h-6" />
-        </button>
+        </Link>
         
         <div className="flex-1 max-w-xl mx-8 hidden md:block">
            <div className="flex justify-between items-center mb-2">
-             <span className="text-[10px] font-bold text-electric-blue uppercase tracking-widest">Question {currentIndex + 1} of {questions.length}</span>
+             <span className="text-[10px] font-bold text-[#2E5BFF] uppercase tracking-widest">Question {currentIndex + 1} of {questions.length}</span>
              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{Math.round(((currentIndex + 1) / questions.length) * 100)}% Complete</span>
            </div>
            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
              <motion.div 
                initial={{ width: 0 }}
                animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-               className="h-full bg-gradient-to-r from-electric-blue to-sunset-orange shadow-[0_0_12px_rgba(37,99,235,0.4)]"
+               className="h-full bg-gradient-to-r from-[#2E5BFF] to-[#FFCC22] shadow-[0_0_12px_rgba(37,99,235,0.4)]"
              />
            </div>
         </div>
 
         <div className="flex items-center gap-4">
            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full">
-             <Flame className="w-4 h-4 text-sunset-orange fill-sunset-orange" />
-             <span className="text-sm font-extrabold text-sunset-orange uppercase tracking-tighter">14 Day Streak</span>
+              <Flame className="w-4 h-4 text-[#FFCC22] fill-[#FFCC22]" />
+              <span className="text-sm font-extrabold text-[#FFCC22] uppercase tracking-tighter">14 Day Streak</span>
            </div>
         </div>
       </header>
@@ -128,8 +130,10 @@ export default function QuizScreen() {
          {/* Question Area */}
          <div className="lg:col-span-8 space-y-10">
             <div>
-               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-electric-blue/10 border border-electric-blue/20 mb-6 uppercase tracking-widest text-[10px] font-extrabold text-electric-blue">
-                 <Sparkles className="w-3.5 h-3.5" />
+               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2E5BFF]/10 border border-[#2E5BFF]/20 mb-6 uppercase tracking-widest text-[10px] font-extrabold text-[#2E5BFF]">
+                 <div className="w-3.5 h-3.5 rounded-full bg-[#2E5BFF]/20 flex items-center justify-center">
+                    <Sparkles className="w-2.5 h-2.5" />
+                 </div>
                  Academic Mastery
                </div>
                <div className="text-2xl md:text-3xl font-extrabold text-white leading-snug tracking-tight prose prose-invert max-w-none">
@@ -145,12 +149,12 @@ export default function QuizScreen() {
                    onClick={() => setSelectedOption(i)}
                    className={`w-full group text-left p-6 rounded-2xl border transition-all duration-200 flex items-center gap-6 relative overflow-hidden ${
                      selectedOption === i 
-                       ? 'border-electric-blue bg-electric-blue/5 shadow-[0_0_12px_rgba(37,99,235,0.1)]' 
-                       : 'border-white/5 bg-surface-dark hover:border-white/10'
+                       ? 'border-[#2E5BFF] bg-[#2E5BFF]/5 shadow-[0_0_12px_rgba(37,99,235,0.1)]' 
+                       : 'border-white/5 bg-[#0A0A0A] hover:border-white/10'
                    } ${isAnswered && i === currentQ.correctAnswer ? 'border-emerald-500 bg-emerald-500/10' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'border-red-500 bg-red-500/10' : ''}`}
                  >
                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm transition-colors ${
-                     selectedOption === i ? 'bg-electric-blue text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 font-bold'
+                     selectedOption === i ? 'bg-[#2E5BFF] text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 font-bold'
                    } ${isAnswered && i === currentQ.correctAnswer ? 'bg-emerald-500 text-white' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'bg-red-500 text-white' : ''}`}>
                      {String.fromCharCode(65 + i)}
                    </div>
@@ -166,7 +170,7 @@ export default function QuizScreen() {
               <button 
                 onClick={handleSubmit}
                 disabled={selectedOption === null}
-                className="w-full py-5 bg-electric-blue text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3 shadow-xl shadow-electric-blue/20"
+                className="w-full py-5 bg-[#2E5BFF] text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#2E5BFF]/20"
               >
                 Submit Answer
                 <ArrowRight className="w-5 h-5" />
@@ -176,10 +180,10 @@ export default function QuizScreen() {
 
          {/* Sidebar Stats */}
          <div className="lg:col-span-4 space-y-6 hidden lg:block">
-            <div className="bg-surface-dark p-6 rounded-2xl border border-white/5 border-l-4 border-l-sunset-orange">
+            <div className="bg-[#0A0A0A] p-6 rounded-2xl border border-white/5 border-l-4 border-l-[#FFCC22]">
                <div className="flex items-center gap-3 mb-4">
-                 <div className="w-10 h-10 rounded-full bg-sunset-orange/10 flex items-center justify-center">
-                    <Timer className="w-5 h-5 text-sunset-orange" />
+                 <div className="w-10 h-10 rounded-full bg-[#FFCC22]/10 flex items-center justify-center">
+                    <Timer className="w-5 h-5 text-[#FFCC22]" />
                  </div>
                  <div>
                     <p className="text-[10px] font-extrabold text-white/40 uppercase tracking-widest">Mastery Progress</p>
@@ -188,8 +192,8 @@ export default function QuizScreen() {
                </div>
             </div>
 
-            <div className="bg-surface-dark p-6 rounded-2xl border border-white/5">
-               <div className="flex items-center gap-2 mb-4 text-electric-blue">
+            <div className="bg-[#0A0A0A] p-6 rounded-2xl border border-white/5">
+               <div className="flex items-center gap-2 mb-4 text-[#2E5BFF]">
                  <Lightbulb className="w-5 h-5" fill="currentColor" />
                  <span className="text-[10px] font-extrabold uppercase tracking-widest">Scholar Tip</span>
                </div>
@@ -216,7 +220,7 @@ export default function QuizScreen() {
               exit={{ y: 100, opacity: 0 }}
                className="fixed bottom-0 left-0 w-full z-50 p-6 flex justify-center"
             >
-              <div className={`max-w-2xl w-full bg-surface-dark border border-white/10 rounded-[2.5rem] p-8 md:p-10 border-t relative overflow-hidden shadow-[0_-20px_40px_rgba(0,0,0,0.4)] ${selectedOption === currentQ.correctAnswer ? 'border-t-emerald-500/30' : 'border-t-red-500/30'}`}>
+              <div className={`max-w-2xl w-full bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-10 border-t relative overflow-hidden shadow-[0_-20px_40px_rgba(0,0,0,0.4)] ${selectedOption === currentQ.correctAnswer ? 'border-t-emerald-500/30' : 'border-t-red-500/30'}`}>
                  <div className={`absolute top-[-100px] left-1/2 -translate-x-1/2 w-64 h-64 blur-[80px] rounded-full ${selectedOption === currentQ.correctAnswer ? 'bg-emerald-500/10' : 'bg-red-500/10'}`} />
                  
                  <div className="flex items-center gap-4 mb-8">
@@ -245,7 +249,7 @@ export default function QuizScreen() {
 
                  <button 
                   onClick={handleNext}
-                  className="w-full py-5 bg-gradient-to-r from-sunset-orange to-red-600 text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-sunset-orange/20"
+                  className="w-full py-5 bg-gradient-to-r from-[#FFCC22] to-red-600 text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-[#FFCC22]/20"
                  >
                    {currentIndex < questions.length - 1 ? 'Next Question' : 'See Results'}
                    <ArrowRight className="w-5 h-5" />

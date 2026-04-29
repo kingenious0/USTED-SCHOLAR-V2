@@ -1,9 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { AppProvider, useApp } from './context/AppContext';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AppProvider } from './context/AppContext';
 import LandingScreen from './screens/LandingScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -15,38 +11,32 @@ import SideNavBar from './components/navigation/SideNavBar';
 import BottomNavBar from './components/navigation/BottomNavBar';
 import { motion, AnimatePresence } from 'motion/react';
 
-function AppRouter() {
-  const { currentScreen } = useApp();
-
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'landing': return <LandingScreen />;
-      case 'onboarding': return <OnboardingScreen />;
-      case 'dashboard': return <DashboardScreen />;
-      case 'library': return <LibraryScreen />;
-      case 'hub': return <HubScreen />;
-      case 'quiz': return <QuizScreen />;
-      case 'profile': return <ProfileScreen />;
-      default: return <LandingScreen />;
-    }
-  };
-
-  const showNav = currentScreen !== 'landing' && currentScreen !== 'onboarding' && currentScreen !== 'quiz';
+function AppContent() {
+  const location = useLocation();
+  const showNav = location.pathname !== '/' && location.pathname !== '/onboarding';
 
   return (
-    <div className="min-h-screen flex text-white relative">
+    <div className="min-h-screen flex text-white relative bg-[#050505]">
       {showNav && <SideNavBar className="hidden lg:flex" />}
-      <main className={`flex-1 min-w-0 ${showNav ? 'lg:pl-sidebar-width pb-24 lg:pb-0' : ''}`}>
+      <main className={`flex-1 min-w-0 ${showNav ? 'lg:pl-[240px] pb-24 lg:pb-0' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentScreen}
+            key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
             className="min-h-screen"
           >
-            {renderScreen()}
+            <Routes location={location}>
+              <Route path="/" element={<LandingScreen />} />
+              <Route path="/onboarding" element={<OnboardingScreen />} />
+              <Route path="/dashboard" element={<DashboardScreen />} />
+              <Route path="/library" element={<LibraryScreen />} />
+              <Route path="/hub" element={<HubScreen />} />
+              <Route path="/quiz" element={<QuizScreen />} />
+              <Route path="/profile" element={<ProfileScreen />} />
+            </Routes>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -57,9 +47,10 @@ function AppRouter() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppRouter />
-    </AppProvider>
+    <Router>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </Router>
   );
 }
-
