@@ -29,7 +29,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto flex flex-col gap-8 min-h-screen overflow-y-auto relative">
+    <div className="p-6 pt-20 lg:p-10 max-w-7xl mx-auto flex flex-col gap-8 min-h-screen overflow-y-auto relative pb-28 lg:pb-0">
       {/* Background Orbs */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-electric-blue/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
 

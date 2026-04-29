@@ -52,7 +52,7 @@ export default function HubScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async (text: string = input) => {
-    if (!text.trim() || isLoading || errorCooldown > 0) return;
+    if (typeof text !== 'string' || !text.trim() || isLoading || errorCooldown > 0) return;
     
     const targetId = selectedFile?.file_id || selectedFile?.id;
     const userMsg = { role: 'user', text };
@@ -79,7 +79,9 @@ export default function HubScreen() {
   };
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row bg-background-dark pt-16 lg:pt-0 overflow-hidden">
+    <div className="h-[100dvh] lg:h-screen flex flex-col lg:flex-row bg-background-dark overflow-hidden relative">
+      {/* Mobile Top Header Spacer */}
+      <div className="h-16 lg:hidden shrink-0" />
       {/* Left: PDF/Document Viewer */}
       <section className="flex-1 flex flex-col min-h-0 border-r border-white/5 relative">
         {/* Abstract Background Glow */}
@@ -149,7 +151,7 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className="w-full lg:w-[400px] h-full flex flex-col bg-surface-dark border-l border-white/10 relative z-20">
+      <aside className="w-full lg:w-[400px] h-full flex flex-col bg-surface-dark border-l border-white/10 relative z-20 pb-24 lg:pb-0">
          <header className="p-6 border-b border-white/5 flex items-center justify-between">
            <div className="flex items-center gap-4">
              <div className="w-10 h-10 rounded-xl bg-electric-blue flex items-center justify-center shadow-lg shadow-electric-blue/20">
@@ -168,7 +170,7 @@ export default function HubScreen() {
            </button>
          </header>
 
-         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
             <AnimatePresence>
               {messages.map((m, i) => (
                 <motion.div 

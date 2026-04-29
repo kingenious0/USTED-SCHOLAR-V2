@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from './supabase';
-import Groq from 'groq';
+import Groq from 'groq-sdk';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 
 // Multi-Key Management
@@ -42,11 +42,25 @@ async function fetchPdfBase64(fileId: string): Promise<string | null> {
 export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void) {
   // 1. Pro Move: Check for Synthesis OR Full Text cache
   onUpdate('', 'Checking neural cache...');
-  const { data: cached } = await supabase
+  const { data: cached, error: dbError } = await supabase
     .from('courses')
     .select('synthesis, full_text')
     .or(`id.eq.${fileId},file_id.eq.${fileId}`)
     .single();
+
+  // If the query failed because full_text column is missing, try just synthesis
+  if (dbError && dbError.message.includes('full_text')) {
+    console.warn('Supabase: full_text column missing. Please run the SQL migration.');
+    const { data: fallback } = await supabase
+      .from('courses')
+      .select('synthesis')
+      .or(`id.eq.${fileId},file_id.eq.${fileId}`)
+      .single();
+    if (fallback?.synthesis) {
+      onUpdate(fallback.synthesis, 'Ready');
+      return fallback.synthesis;
+    }
+  }
 
   // If synthesis exists, return it immediately
   if (cached?.synthesis) {
@@ -153,16 +167,26 @@ export async function streamChat(fileId: string, message: string, history: any[]
     try {
       const groq = new Groq({ apiKey: GROQ_API_KEY, dangerouslyAllowBrowser: true });
       
-      // Use provided context or fetch full_text from DB
+      // Use provided context or fetch from DB
       let systemContext = context;
       if (!systemContext) {
-        const { data: cached } = await supabase
+        // Try to get both, but fall back to just synthesis if column is missing
+        const { data: cached, error: dbError } = await supabase
           .from('courses')
           .select('synthesis, full_text')
           .or(`id.eq.${fileId},file_id.eq.${fileId}`)
-          .single();
-        // Prioritize full_text over synthesis for better accuracy
-        systemContext = cached?.full_text || cached?.synthesis || '';
+          .maybeSingle();
+
+        if (dbError && dbError.message.includes('full_text')) {
+           const { data: fallback } = await supabase
+            .from('courses')
+            .select('synthesis')
+            .or(`id.eq.${fileId},file_id.eq.${fileId}`)
+            .maybeSingle();
+           systemContext = fallback?.synthesis || '';
+        } else {
+           systemContext = cached?.full_text || cached?.synthesis || '';
+        }
       }
 
       const chatCompletion = await groq.chat.completions.create({

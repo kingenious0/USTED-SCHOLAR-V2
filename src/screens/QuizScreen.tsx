@@ -92,7 +92,7 @@ export default function QuizScreen() {
   const currentQ = questions[currentIndex];
 
   return (
-    <div className="min-h-screen bg-background-dark flex flex-col p-6 lg:p-12 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-background-dark flex flex-col p-6 lg:p-12 relative overflow-hidden pb-24 lg:pb-0">
       {/* Top Bar */}
       <header className="flex justify-between items-center mb-12 relative z-10">
         <button 
