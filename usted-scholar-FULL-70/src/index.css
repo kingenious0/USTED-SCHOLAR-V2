@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-background-dark: #0A0A0A;
+  --color-surface-dark: #1A1A1A;
+  --color-electric-blue: #2563EB;
+  --color-sunset-orange: #F97316;
+  
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  
+  --radius-premium: 16px;
+  
+  --spacing-sidebar-width: 240px;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+
+@layer base {
+  body {
+    @apply bg-background-dark text-white font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[#1A1A1A]/80 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .stat-card {
+    @apply bg-surface-dark p-6 rounded-2xl border border-white/5 relative flex flex-col gap-4;
+  }
+  
+  .stat-card .label {
+    @apply text-xs text-white/60 uppercase tracking-wider font-semibold;
+  }
+  
+  .stat-card .value {
+    @apply text-2xl font-extrabold text-white;
+  }
+  
+  .stat-card .trend {
+    @apply text-[11px] mt-1;
+  }
+
+  .pro-badge {
+    @apply bg-gradient-to-br from-electric-blue to-sunset-orange px-3 py-1 rounded-full text-[11px] font-extrabold uppercase;
+  }
+
+  .ai-gradient-border {
+    @apply relative p-[1px] rounded-premium overflow-hidden border border-dashed border-electric-blue/30 bg-electric-blue/5;
+  }
+  
+  .ai-gradient-content {
+    @apply bg-transparent rounded-[15px] h-full;
+  }
+
+  .cta-button {
+    @apply bg-electric-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all active:scale-95;
+  }
+
+  .progress-bar {
+    @apply h-1.5 bg-white/10 rounded-full overflow-hidden w-full;
+  }
+
+  .progress-fill {
+    @apply h-full bg-sunset-orange rounded-full;
+  }
+}
+
