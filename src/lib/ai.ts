@@ -61,13 +61,54 @@ async function fetchPdfBufferFromStorage(fileId: string): Promise<ArrayBuffer | 
     else query = query.eq('file_id', fileId);
 
     const { data: course, error: dbError } = await query.maybeSingle();
-    if (dbError || !course?.storage_path) return null;
+    if (dbError || !course?.storage_path) {
+      console.error('❌ DB Error or Missing Path:', dbError, course);
+      return null;
+    }
 
+    const rawPath = course.storage_path;
+    console.log('📡 Attempting Download:', rawPath);
+    
     const { data, error: storageError } = await supabase.storage
       .from('course-materials')
-      .download(course.storage_path);
+      .download(rawPath);
 
-    if (storageError || !data) return null;
+    if (storageError && (storageError as any).status === 400) {
+      console.log('🔍 Deep Hunter: Searching for misplaced file...');
+      const fileName = rawPath.split('/').pop() || '';
+      
+      // Try listing root folders to see what exists
+      const { data: rootItems } = await supabase.storage.from('course-materials').list('');
+      console.log('📂 Folders found in Storage:', rootItems?.map(f => `"${f.name}"`).join(', '));
+
+      if (rootItems) {
+        for (const folder of rootItems) {
+          const { data: folderFiles } = await supabase.storage
+            .from('course-materials')
+            .list(folder.name);
+
+          const match = folderFiles?.find(f => 
+            f.name.toLowerCase().trim() === fileName.toLowerCase().trim()
+          );
+
+          if (match) {
+            const correctedPath = `${folder.name}/${match.name}`;
+            console.log('✅ Deep Hunter: Found match in folder:', correctedPath);
+            const { data: retryData } = await supabase.storage
+              .from('course-materials')
+              .download(correctedPath);
+            if (retryData) return await retryData.arrayBuffer();
+          }
+        }
+      }
+    }
+
+    if (storageError) {
+      console.error('❌ Supabase Storage Error:', storageError.message);
+      return null;
+    }
+
+    if (!data) return null;
     return await data.arrayBuffer();
   } catch (e) {
     return null;
@@ -230,7 +271,7 @@ export async function generateQuiz(fileId: string) {
       const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
       const response = await client.chat.completions.create({
         messages: [
-          { role: 'system', content: 'Generate 5 academic MCQs in JSON. Return a "questions" array.' },
+          { role: 'system', content: 'Generate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question" (string), "options" (array of 4 strings), "correctAnswer" (index 0-3), and "explanation" (string).' },
           { role: 'user', content: `Context: ${context}` }
         ],
         model: 'llama3.1-8b', 
@@ -243,6 +284,6 @@ export async function generateQuiz(fileId: string) {
 
   const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', generationConfig: { responseMimeType: "application/json" } });
-  const result = await model.generateContent([{ text: `Context: ${context}\n\nGenerate quiz JSON.` }]);
+  const result = await model.generateContent([{ text: `Context: ${context}\n\nGenerate quiz JSON with "questions" array. Each question must have "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }]);
   return JSON.parse(result.response.text());
 }

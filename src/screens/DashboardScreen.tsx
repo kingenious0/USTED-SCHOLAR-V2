@@ -14,10 +14,13 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     async function fetchCourses() {
+      // Order by created_at and filter out the duplicate/legacy L200_S2 entry
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .limit(5);
+        .neq('meta_tag', 'L200_S2') // Exclude the legacy duplicate
+        .order('created_at', { ascending: false })
+        .limit(8);
       if (!error && data) setCourses(data);
       setLoading(false);
     }
@@ -25,7 +28,7 @@ export default function DashboardScreen() {
   }, []);
 
   return (
-    <div className="p-6 pt-20 lg:p-10 max-w-7xl mx-auto flex flex-col gap-8 min-h-screen overflow-y-auto relative pb-28 lg:pb-0 bg-[#050505]">
+    <div className="p-6 pt-20 lg:p-10 max-w-7xl mx-auto flex flex-col gap-10 min-h-screen overflow-y-auto relative pb-28 lg:pb-0 bg-[#050505]">
       {/* Background Orbs */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#2E5BFF]/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
 
@@ -41,7 +44,7 @@ export default function DashboardScreen() {
         </div>
       </header>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Professional 3-Column */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 relative z-10">
         <div className="bg-[#0A0A0A] border border-white/5 p-8 rounded-[2.5rem] group relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
@@ -69,57 +72,62 @@ export default function DashboardScreen() {
         </div>
       </div>
 
-      {/* Active Courses */}
+      {/* Active Modules - Professional Vertical Grid */}
       <section className="course-section relative z-10">
-        <h2 className="text-lg font-black mb-6 text-white uppercase tracking-[0.2em] flex items-center gap-3">
+        <h2 className="text-lg font-black mb-8 text-white uppercase tracking-[0.2em] flex items-center gap-3">
           <div className="h-4 w-1 bg-[#2E5BFF] rounded-full" />
           Active Modules 
         </h2>
-        <div className="flex gap-6 overflow-x-auto pb-6 hide-scrollbar snap-x">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {loading ? (
-            <div className="flex items-center gap-3 text-white/20 font-black uppercase tracking-widest text-xs p-10 bg-[#0A0A0A] rounded-3xl w-full border border-dashed border-white/10">
-              <Loader2 className="w-5 h-5 animate-spin text-[#2E5BFF]" />
-              Initializing Neural Sync...
+            <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 bg-[#0A0A0A] rounded-[3rem] border border-dashed border-white/5">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2E5BFF]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Syncing Academic Library...</span>
             </div>
           ) : courses.map((c, i) => (
-            <Link 
-              key={c.id} 
-              to="/hub"
-              onClick={() => setSelectedFile(c)}
-              className="min-w-[280px] bg-[#0A0A0A] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-[#2E5BFF]/30 transition-all group cursor-pointer hover:-translate-y-2 snap-start shadow-xl"
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.1 }}
+              <Link 
+                to="/hub"
+                onClick={() => setSelectedFile(c)}
+                className="block h-full bg-[#0A0A0A] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-[#2E5BFF]/30 transition-all group cursor-pointer shadow-xl relative"
               >
                 <div 
-                  className="h-36 flex items-center justify-center font-black text-white text-xl tracking-tighter uppercase p-6 text-center relative overflow-hidden"
-                  style={{ background: i % 3 === 0 ? 'linear-gradient(135deg, #1e3a8a, #2E5BFF)' : i % 3 === 1 ? 'linear-gradient(135deg, #7c2d12, #FFCC22)' : 'linear-gradient(135deg, #064e3b, #10b981)' }}
+                  className="h-40 flex flex-col justify-end p-8 relative overflow-hidden transition-all duration-500"
+                  style={{ background: i % 4 === 0 ? 'linear-gradient(135deg, #1e3a8a, #2E5BFF)' : i % 4 === 1 ? 'linear-gradient(135deg, #7c2d12, #FFCC22)' : i % 4 === 2 ? 'linear-gradient(135deg, #064e3b, #10b981)' : 'linear-gradient(135deg, #4c1d95, #8b5cf6)' }}
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
-                  <span className="relative z-10 drop-shadow-lg">{c.name}</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="text-[10px] font-black text-[#2E5BFF] uppercase tracking-widest">{c.meta_tag || 'COURSE'}</div>
-                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">70%</div>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: '70%' }}
-                      transition={{ duration: 1, delay: i * 0.2 }}
-                      className="h-full bg-gradient-to-r from-[#FFCC22] to-red-500" 
-                    />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-150 transition-transform duration-700" />
+                  <div className="relative z-10">
+                    <div className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">{c.meta_tag || 'MODULE'}</div>
+                    <h3 className="text-xl font-black text-white leading-tight tracking-tighter uppercase">{c.name}</h3>
                   </div>
                 </div>
-              </motion.div>
-            </Link>
+                <div className="p-8 bg-[#0A0A0A]">
+                  <div className="flex justify-between items-center mb-4">
+                     <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Active</span>
+                     </div>
+                     <span className="text-xs font-black text-white tracking-tighter">70%</span>
+                  </div>
+                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                     <motion.div 
+                       initial={{ width: 0 }}
+                       animate={{ width: '70%' }}
+                       className="h-full bg-[#2E5BFF]" 
+                     />
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
       </section>
-
     </div>
   );
 }

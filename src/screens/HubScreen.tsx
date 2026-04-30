@@ -248,7 +248,7 @@ export default function HubScreen() {
                 className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-5 pr-14 text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-[#2E5BFF]/50 resize-none h-24"
               />
               <button 
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 className="absolute bottom-4 right-4 p-2.5 bg-[#2E5BFF] text-white rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#2E5BFF]/20"
               >
                 <Send className="w-5 h-5" />

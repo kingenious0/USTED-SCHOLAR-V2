@@ -77,7 +77,7 @@ export default function QuizScreen() {
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-[#FFCC22]/20 blur-3xl rounded-full" />
          <Trophy className="w-24 h-24 text-[#FFCC22] mx-auto mb-6 relative z-10" />
          <h2 className="text-4xl font-black text-white mb-2 relative z-10">Mastery Level</h2>
-         <div className="text-6xl font-black text-[#2E5BFF] mb-8">{(score / questions.length) * 100}%</div>
+         <div className="text-6xl font-black text-[#2E5BFF] mb-8">{questions.length > 0 ? Math.round((score / questions.length) * 100) : 0}%</div>
          <p className="text-white/60 font-medium mb-10 leading-relaxed">
             You got {score} out of {questions.length} questions correct. Your mastery of {selectedFile?.name} is growing!
          </p>
@@ -95,25 +95,21 @@ export default function QuizScreen() {
 
   return (
     <div className="min-h-[100dvh] bg-[#050505] flex flex-col p-6 lg:p-12 relative overflow-hidden pb-24 lg:pb-0">
-      {/* Top Bar */}
       <header className="flex justify-between items-center mb-12 relative z-10">
-        <Link 
-          to="/hub"
-          className="p-2 text-zinc-500 hover:text-white transition-all"
-        >
+        <Link to="/hub" className="p-2 text-zinc-500 hover:text-white transition-all">
           <X className="w-6 h-6" />
         </Link>
         
         <div className="flex-1 max-w-xl mx-8 hidden md:block">
            <div className="flex justify-between items-center mb-2">
              <span className="text-[10px] font-bold text-[#2E5BFF] uppercase tracking-widest">Question {currentIndex + 1} of {questions.length}</span>
-             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{Math.round(((currentIndex + 1) / questions.length) * 100)}% Complete</span>
+             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{questions.length > 0 ? Math.round(((currentIndex + 1) / questions.length) * 100) : 0}% Complete</span>
            </div>
            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
              <motion.div 
                initial={{ width: 0 }}
-               animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-               className="h-full bg-gradient-to-r from-[#2E5BFF] to-[#FFCC22] shadow-[0_0_12px_rgba(37,99,235,0.4)]"
+               animate={{ width: `${questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0}%` }}
+               className="h-full bg-gradient-to-r from-[#2E5BFF] to-[#FFCC22]"
              />
            </div>
         </div>
@@ -127,68 +123,77 @@ export default function QuizScreen() {
       </header>
 
       <main className="flex-1 max-w-4xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start px-4">
-         {/* Question Area */}
          <div className="lg:col-span-8 space-y-10">
-            <div>
-               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2E5BFF]/10 border border-[#2E5BFF]/20 mb-6 uppercase tracking-widest text-[10px] font-extrabold text-[#2E5BFF]">
-                 <div className="w-3.5 h-3.5 rounded-full bg-[#2E5BFF]/20 flex items-center justify-center">
-                    <Sparkles className="w-2.5 h-2.5" />
-                 </div>
-                 Academic Mastery
-               </div>
-               <div className="text-2xl md:text-3xl font-extrabold text-white leading-snug tracking-tight prose prose-invert max-w-none">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentQ.question}</ReactMarkdown>
-               </div>
-            </div>
-
-            <div className="space-y-4">
-               {currentQ.options.map((opt: string, i: number) => (
-                 <button
-                   key={i}
-                   disabled={isAnswered}
-                   onClick={() => setSelectedOption(i)}
-                   className={`w-full group text-left p-6 rounded-2xl border transition-all duration-200 flex items-center gap-6 relative overflow-hidden ${
-                     selectedOption === i 
-                       ? 'border-[#2E5BFF] bg-[#2E5BFF]/5 shadow-[0_0_12px_rgba(37,99,235,0.1)]' 
-                       : 'border-white/5 bg-[#0A0A0A] hover:border-white/10'
-                   } ${isAnswered && i === currentQ.correctAnswer ? 'border-emerald-500 bg-emerald-500/10' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'border-red-500 bg-red-500/10' : ''}`}
-                 >
-                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm transition-colors ${
-                     selectedOption === i ? 'bg-[#2E5BFF] text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 font-bold'
-                   } ${isAnswered && i === currentQ.correctAnswer ? 'bg-emerald-500 text-white' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'bg-red-500 text-white' : ''}`}>
-                     {String.fromCharCode(65 + i)}
+            {!currentQ ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <Loader2 className="w-10 h-10 text-[#2E5BFF] animate-spin mb-4" />
+                  <p className="text-white/40 font-bold uppercase tracking-widest text-xs">Finalizing neural data...</p>
+                </div>
+            ) : (
+               <>
+                <div>
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2E5BFF]/10 border border-[#2E5BFF]/20 mb-6 uppercase tracking-widest text-[10px] font-extrabold text-[#2E5BFF]">
+                     <Sparkles className="w-2.5 h-2.5" />
+                     Academic Mastery
                    </div>
-                   <p className={`flex-1 text-sm md:text-base leading-relaxed font-medium ${selectedOption === i ? 'text-white' : 'text-white/60'}`}>
-                     {opt}
-                   </p>
-                   {isAnswered && i === currentQ.correctAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
-                 </button>
-               ))}
-            </div>
+                   <div className="text-2xl md:text-3xl font-extrabold text-white leading-snug tracking-tight prose prose-invert max-w-none">
+                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentQ.question}</ReactMarkdown>
+                   </div>
+                </div>
 
-            {!isAnswered && (
-              <button 
-                onClick={handleSubmit}
-                disabled={selectedOption === null}
-                className="w-full py-5 bg-[#2E5BFF] text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#2E5BFF]/20"
-              >
-                Submit Answer
-                <ArrowRight className="w-5 h-5" />
-              </button>
+                <div className="space-y-4">
+                   {(currentQ.options || currentQ.choices || currentQ.answers || [])?.map((opt: string, i: number) => (
+                      <button
+                        key={i}
+                        disabled={isAnswered}
+                        onClick={() => setSelectedOption(i)}
+                        className={`w-full group text-left p-6 rounded-2xl border transition-all duration-200 flex items-center gap-6 relative overflow-hidden ${
+                          selectedOption === i 
+                            ? 'border-[#2E5BFF] bg-[#2E5BFF]/5 shadow-[0_0_12px_rgba(37,99,235,0.1)]' 
+                            : 'border-white/5 bg-[#0A0A0A] hover:border-white/10'
+                        } ${isAnswered && i === currentQ.correctAnswer ? 'border-emerald-500 bg-emerald-500/10' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'border-red-500 bg-red-500/10' : ''}`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm transition-colors ${
+                          selectedOption === i ? 'bg-[#2E5BFF] text-white' : 'bg-white/5 text-white/40 group-hover:bg-white/10 font-bold'
+                        } ${isAnswered && i === currentQ.correctAnswer ? 'bg-emerald-500 text-white' : ''} ${isAnswered && selectedOption === i && i !== currentQ.correctAnswer ? 'bg-red-500 text-white' : ''}`}>
+                          {String.fromCharCode(65 + i)}
+                        </div>
+                        <p className={`flex-1 text-sm md:text-base leading-relaxed font-medium ${selectedOption === i ? 'text-white' : 'text-white/60'}`}>
+                          {opt}
+                        </p>
+                        {isAnswered && i === currentQ.correctAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
+                      </button>
+                   ))}
+                </div>
+
+                {isAnswered && (
+                  <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/5">
+                     <p className="text-zinc-400 text-sm italic">Analysis complete. Check the explanation below for deep insights.</p>
+                  </div>
+                )}
+
+                {!isAnswered && (
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={selectedOption === null}
+                    className="w-full mt-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3 shadow-xl shadow-[#2E5BFF]/20"
+                  >
+                    Submit Answer
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                )}
+               </>
             )}
          </div>
 
-         {/* Sidebar Stats */}
          <div className="lg:col-span-4 space-y-6 hidden lg:block">
             <div className="bg-[#0A0A0A] p-6 rounded-2xl border border-white/5 border-l-4 border-l-[#FFCC22]">
                <div className="flex items-center gap-3 mb-4">
-                 <div className="w-10 h-10 rounded-full bg-[#FFCC22]/10 flex items-center justify-center">
-                    <Timer className="w-5 h-5 text-[#FFCC22]" />
-                 </div>
-                 <div>
-                    <p className="text-[10px] font-extrabold text-white/40 uppercase tracking-widest">Mastery Progress</p>
-                    <p className="text-xl font-extrabold text-white tracking-tight">{score} Correct</p>
-                 </div>
+                  <Timer className="w-5 h-5 text-[#FFCC22]" />
+                  <div>
+                     <p className="text-[10px] font-extrabold text-white/40 uppercase tracking-widest">Mastery Progress</p>
+                     <p className="text-xl font-extrabold text-white tracking-tight">{score} Correct</p>
+                  </div>
                </div>
             </div>
 
@@ -204,53 +209,34 @@ export default function QuizScreen() {
          </div>
       </main>
 
-      {/* Explanation Pop-up */}
       <AnimatePresence>
-        {isAnswered && (
+        {isAnswered && currentQ && (
           <>
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
-            />
-            <motion.div 
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-               className="fixed bottom-0 left-0 w-full z-50 p-6 flex justify-center"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40" />
+            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="fixed bottom-0 left-0 w-full z-50 p-6 flex justify-center">
               <div className={`max-w-2xl w-full bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-10 border-t relative overflow-hidden shadow-[0_-20px_40px_rgba(0,0,0,0.4)] ${selectedOption === currentQ.correctAnswer ? 'border-t-emerald-500/30' : 'border-t-red-500/30'}`}>
                  <div className={`absolute top-[-100px] left-1/2 -translate-x-1/2 w-64 h-64 blur-[80px] rounded-full ${selectedOption === currentQ.correctAnswer ? 'bg-emerald-500/10' : 'bg-red-500/10'}`} />
-                 
                  <div className="flex items-center gap-4 mb-8">
                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${selectedOption === currentQ.correctAnswer ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
                      {selectedOption === currentQ.correctAnswer ? <Award className="w-8 h-8 text-emerald-500" /> : <X className="w-8 h-8 text-red-500" />}
                    </div>
                    <div>
-                     <h3 className="text-2xl font-extrabold text-white tracking-tight">
-                       {selectedOption === currentQ.correctAnswer ? 'Excellent Analysis!' : 'Not Quite...'}
-                     </h3>
-                     <p className="text-white/40 font-bold text-sm tracking-widest uppercase">
-                       {selectedOption === currentQ.correctAnswer ? '+150 XP Earned' : 'Knowledge is a Journey'}
-                     </p>
+                     <h3 className="text-2xl font-extrabold text-white tracking-tight">{selectedOption === currentQ.correctAnswer ? 'Excellent Analysis!' : 'Not Quite...'}</h3>
+                     <p className="text-white/40 font-bold text-sm tracking-widest uppercase">{selectedOption === currentQ.correctAnswer ? '+150 XP Earned' : 'Knowledge is a Journey'}</p>
                    </div>
                  </div>
 
                  <div className="bg-white/5 rounded-2xl p-6 border border-white/5 mb-8">
                     <div className="flex items-start gap-3 mb-4">
                        <MessageSquareQuote className={`w-5 h-5 ${selectedOption === currentQ.correctAnswer ? 'text-emerald-500' : 'text-red-500'}`} />
-                       <h4 className="font-extrabold text-white uppercase text-xs tracking-widest mt-1">AI Explanation</h4>
+                       <h4 className="font-extrabold text-white uppercase text-xs tracking-widest mt-1">Explanation</h4>
                     </div>
                     <div className="text-white/60 leading-relaxed text-sm font-medium prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentQ.explanation}</ReactMarkdown>
                     </div>
                  </div>
 
-                 <button 
-                  onClick={handleNext}
-                  className="w-full py-5 bg-gradient-to-r from-[#FFCC22] to-red-600 text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-[#FFCC22]/20"
-                 >
+                 <button onClick={handleNext} className="w-full py-5 bg-gradient-to-r from-[#FFCC22] to-red-600 text-white rounded-2xl font-extrabold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-[#FFCC22]/20">
                    {currentIndex < questions.length - 1 ? 'Next Question' : 'See Results'}
                    <ArrowRight className="w-5 h-5" />
                  </button>
