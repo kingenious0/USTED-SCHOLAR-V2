@@ -58,8 +58,8 @@ export default function DashboardScreen() {
     (c.meta_tag || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const recentCourses = filteredCourses.slice(0, 2);
-  const archiveCourses = filteredCourses.slice(2);
+  const recentCourses = filteredCourses.slice(1, 3);
+  const archiveCourses = filteredCourses.slice(3);
 
   return (
     <div className="p-6 pt-20 lg:p-10 max-w-7xl mx-auto flex flex-col gap-10 min-h-screen overflow-y-auto relative pb-28 lg:pb-0 bg-[var(--bg-primary)] transition-colors duration-300">
@@ -145,6 +145,57 @@ export default function DashboardScreen() {
           <div className="text-[var(--text-tertiary)] trend">Target: 90%</div>
         </div>
       </div>
+
+      {/* SECTION 0: Hero Jump Back In */}
+      {!loading && filteredCourses.length > 0 && !search && (
+        <section className="relative z-10">
+          <div className="bg-gradient-to-r from-[var(--bg-secondary)] to-[var(--bg-primary)] p-1 rounded-[3rem] border border-[var(--border-color)] group hover:border-[var(--accent-primary)]/30 transition-all duration-500 overflow-hidden shadow-2xl shadow-blue-500/5">
+            <div className="bg-[var(--bg-secondary)] rounded-[2.8rem] p-8 lg:p-10 flex flex-col lg:flex-row items-center gap-10">
+              <div className="w-full lg:w-1/3 aspect-[4/3] rounded-[2.5rem] overflow-hidden relative shadow-2xl group-hover:scale-[1.02] transition-transform duration-700">
+                <img 
+                  src={filteredCourses[0].thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600'} 
+                  className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700"
+                  alt="Recent Course"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-6 left-6 right-6">
+                   <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">In Progress • 70%</span>
+                   </div>
+                </div>
+              </div>
+              <div className="flex-1 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--accent-primary)]/10 rounded-full border border-[var(--accent-primary)]/20 mb-6">
+                  <Zap className="w-3 h-3 text-[var(--accent-primary)]" />
+                  <span className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-widest">Jump Back In</span>
+                </div>
+                <h3 className="text-3xl lg:text-4xl font-black text-[var(--text-primary)] mb-4 uppercase tracking-tighter leading-none">
+                  {filteredCourses[0].name}
+                </h3>
+                <p className="text-[var(--text-secondary)] mb-8 max-w-lg leading-relaxed font-medium">
+                  You were last reviewing the core concepts of this module. Your AI Tutor has prepared a quick summary to help you resume.
+                </p>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                  <Link 
+                    to="/hub"
+                    onClick={() => openCourse(filteredCourses[0])}
+                    className="px-8 py-4 bg-[var(--accent-primary)] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Continue Synthesis
+                  </Link>
+                  <Link 
+                    to="/library"
+                    className="px-8 py-4 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-2xl font-black text-xs uppercase tracking-widest border border-[var(--border-color)] hover:bg-[var(--bg-secondary)] transition-all"
+                  >
+                    Library Archive
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       
       {/* SECTION 1: Continue Learning (Horizontal Netflix Scroll) */}
       {!loading && recentCourses.length > 0 && !search && (
