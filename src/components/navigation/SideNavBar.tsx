@@ -7,18 +7,19 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
   const currentPath = location.pathname;
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Bookmark, label: 'Library', path: '/library' },
-    { icon: Zap, label: 'AI Tutor', path: '/hub' },
-    { icon: LayoutGrid, label: 'Quizzes', path: '/quiz' },
+    { icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-500' },
+    { icon: Bookmark, label: 'Library', path: '/library', color: 'text-indigo-500' },
+    { icon: Zap, label: 'AI Tutor', path: '/hub', color: 'text-amber-500' },
+    { icon: LayoutGrid, label: 'Quizzes', path: '/quiz', color: 'text-emerald-500' },
   ];
 
   return (
-    <aside className={`w-[240px] h-screen fixed left-0 top-0 bg-[#0A0A0A] border-r border-white/10 flex flex-col p-8 z-50 ${className}`}>
+    <aside className={`w-[240px] h-screen fixed left-0 top-0 bg-[var(--bg-secondary)] border-r border-[var(--border-color)] flex flex-col p-8 z-50 transition-colors duration-300 ${className}`}>
+      <div className="relative z-10 flex flex-col h-full">
       <div className="mb-12">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-extrabold tracking-tighter text-white">
-            USTED<span className="text-[#2E5BFF]">Scholar</span>
+          <span className="text-2xl font-extrabold tracking-tighter text-[var(--text-primary)]">
+            USTED<span className="text-[var(--accent-primary)]">Scholar</span>
           </span>
         </div>
       </div>
@@ -30,33 +31,40 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
             <Link
               key={item.path}
               to={item.path}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold cursor-pointer group ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold cursor-pointer group relative overflow-hidden ${
                 isActive 
-                  ? 'text-white bg-[#2E5BFF] shadow-lg shadow-[#2E5BFF]/20' 
-                  : 'text-white/40 hover:text-white hover:bg-white/5'
+                  ? 'text-white bg-[var(--accent-primary)] shadow-lg shadow-[var(--accent-primary)]/20' 
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-white'}`} />
-              <span className="text-sm">{item.label}</span>
+              {isActive && (
+                <motion.div 
+                  layoutId="activeNavIndicator"
+                  className="absolute left-0 top-0 w-1 h-full bg-white/40 shadow-[2px_0_10px_rgba(255,255,255,0.3)]"
+                />
+              )}
+              <item.icon className={`w-5 h-5 transition-all duration-300 ${isActive ? 'text-white scale-110' : `${item.color} opacity-70 group-hover:opacity-100 group-hover:scale-110`}`} />
+              <span className={`text-sm tracking-tight transition-all ${isActive ? 'font-black translate-x-1' : ''}`}>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="mt-auto space-y-4">
-        <button className="w-full py-4 bg-[#2E5BFF] text-white rounded-2xl font-bold shadow-lg shadow-[#2E5BFF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+        <button className="w-full py-4 bg-[var(--accent-primary)] text-white rounded-2xl font-bold shadow-lg shadow-[var(--accent-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
           BETA VERSION
         </button>
         
-        <div className="pt-4 border-t border-white/5 space-y-1">
-          <Link to="/settings" className="w-full flex items-center gap-3 px-2 py-2 text-zinc-500 hover:text-white transition-colors text-xs font-medium">
+        <div className="pt-4 border-t border-[var(--border-color)] space-y-1">
+          <Link to="/admin" className="w-full flex items-center gap-3 px-2 py-2 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors text-xs font-black uppercase tracking-widest">
             <Settings className="w-4 h-4" />
-            <span>Settings</span>
+            <span>Admin Portal</span>
           </Link>
-          <Link to="/support" className="w-full flex items-center gap-3 px-2 py-2 text-zinc-500 hover:text-white transition-colors text-xs font-medium">
-            <HelpCircle className="w-4 h-4" />
-            <span>Support</span>
+          <Link to="/profile" className="w-full flex items-center gap-3 px-2 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs font-medium">
+            <User className="w-4 h-4" />
+            <span>Profile</span>
           </Link>
+        </div>
         </div>
       </div>
     </aside>

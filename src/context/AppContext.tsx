@@ -10,6 +10,7 @@ interface UserState {
   semester?: Semester;
   programme?: Programme;
   theme: 'light' | 'dark';
+  recentlyOpenedIds: string[];
 }
 
 interface AppContextType {
@@ -19,6 +20,7 @@ interface AppContextType {
   setScreen: (screen: 'landing' | 'onboarding' | 'dashboard' | 'library' | 'hub' | 'quiz' | 'profile') => void;
   selectedFile: any;
   setSelectedFile: (file: any) => void;
+  openCourse: (course: any) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -32,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [userState, _setUserState] = useState<UserState>(savedState.userState || {
     hasCompletedOnboarding: false,
     theme: 'dark',
+    recentlyOpenedIds: [],
   });
   
   const [currentScreen, setScreen] = useState<'landing' | 'onboarding' | 'dashboard' | 'library' | 'hub' | 'quiz' | 'profile'>(
@@ -53,8 +56,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     _setUserState(prev => ({ ...prev, ...state }));
   };
 
+  const openCourse = (course: any) => {
+    setSelectedFile(course);
+    const currentIds = userState.recentlyOpenedIds || [];
+    const updatedIds = [course.id, ...currentIds.filter(id => id !== course.id)].slice(0, 10);
+    setUserState({ recentlyOpenedIds: updatedIds });
+  };
+
+  // Sync theme with body and root class
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const body = window.document.body;
+    root.classList.remove('light', 'dark');
+    body.classList.remove('light', 'dark');
+    root.classList.add(userState.theme);
+    body.classList.add(userState.theme);
+    
+    // Also update data-theme attribute which some systems use
+    root.setAttribute('data-theme', userState.theme);
+  }, [userState.theme]);
+
   return (
-    <AppContext.Provider value={{ userState, setUserState, currentScreen, setScreen, selectedFile, setSelectedFile }}>
+    <AppContext.Provider value={{ userState, setUserState, currentScreen, setScreen, selectedFile, setSelectedFile, openCourse }}>
       <div className={userState.theme}>
         {children}
       </div>

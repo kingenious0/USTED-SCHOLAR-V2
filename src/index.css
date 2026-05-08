@@ -3,80 +3,114 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-background-dark: #0A0A0A;
-  --color-surface-dark: #1A1A1A;
-  --color-electric-blue: #2563EB;
+  --color-electric-blue: #2E5BFF;
   --color-sunset-orange: #F97316;
+  --color-paprika-red: #8C033B;
+  --color-gold: #FFCC22;
   
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   
   --radius-premium: 16px;
+  --radius-large: 2.5rem;
   
   --spacing-sidebar-width: 240px;
   
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@layer utilities {
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .hide-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-  }
+/* Theme Variables */
+:root {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8F9FA;
+  --bg-tertiary: #F1F3F5;
+  --text-primary: #111111;
+  --text-secondary: #495057;
+  --text-tertiary: #868E96;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --accent-primary: #2E5BFF;
+  --accent-secondary: #FFCC22;
+  --glass-bg: rgba(255, 255, 255, 0.8);
 }
 
+.dark {
+  --bg-primary: #050508; /* Ultra-deep midnight navy */
+  --bg-secondary: #0D0D14;
+  --bg-tertiary: #16161F;
+  --text-primary: #F2F4F7; /* Soft white */
+  --text-secondary: #9BA3AF; /* Muted gray-blue */
+  --text-tertiary: #6B7280;
+  --border-color: rgba(59, 130, 246, 0.1); /* Subtle blue tint border */
+  --accent-primary: #2E5BFF;
+  --accent-secondary: #FFCC22;
+  --glass-bg: rgba(5, 5, 8, 0.85);
+}
 
 @layer base {
   body {
-    @apply bg-background-dark text-white font-sans antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    @apply font-sans antialiased transition-colors duration-300;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-[#1A1A1A]/80 backdrop-blur-xl border border-white/5 shadow-2xl;
+    background-color: var(--glass-bg);
+    @apply backdrop-blur-xl border border-[var(--border-color)] shadow-xl;
   }
   
   .stat-card {
-    @apply bg-surface-dark p-6 rounded-2xl border border-white/5 relative flex flex-col gap-4;
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    @apply p-8 rounded-large border relative flex flex-col gap-4 overflow-hidden;
   }
   
   .stat-card .label {
-    @apply text-xs text-white/60 uppercase tracking-wider font-semibold;
+    color: var(--text-tertiary);
+    @apply text-[10px] font-black uppercase tracking-widest;
   }
   
   .stat-card .value {
-    @apply text-2xl font-extrabold text-white;
+    color: var(--text-primary);
+    @apply text-4xl font-black;
   }
   
   .stat-card .trend {
-    @apply text-[11px] mt-1;
+    @apply font-black text-[10px] uppercase tracking-widest mt-4;
   }
 
   .pro-badge {
-    @apply bg-gradient-to-br from-electric-blue to-sunset-orange px-3 py-1 rounded-full text-[11px] font-extrabold uppercase;
+    @apply bg-gradient-to-br from-electric-blue to-paprika-red px-3 py-1 rounded-full text-[11px] font-extrabold uppercase text-white;
   }
 
   .ai-gradient-border {
     @apply relative p-[1px] rounded-premium overflow-hidden border border-dashed border-electric-blue/30 bg-electric-blue/5;
   }
   
-  .ai-gradient-content {
-    @apply bg-transparent rounded-[15px] h-full;
-  }
-
   .cta-button {
-    @apply bg-electric-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all active:scale-95;
+    @apply bg-electric-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-electric-blue/20;
   }
 
   .progress-bar {
-    @apply h-1.5 bg-white/10 rounded-full overflow-hidden w-full;
+    @apply h-1 bg-[var(--border-color)] rounded-full overflow-hidden w-full;
   }
 
   .progress-fill {
-    @apply h-full bg-sunset-orange rounded-full;
+    @apply h-full bg-electric-blue rounded-full;
   }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 

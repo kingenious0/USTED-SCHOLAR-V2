@@ -7,16 +7,17 @@ import LibraryScreen from './screens/LibraryScreen';
 import HubScreen from './screens/HubScreen';
 import QuizScreen from './screens/QuizScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import AdminScreen from './screens/AdminScreen';
 import SideNavBar from './components/navigation/SideNavBar';
 import BottomNavBar from './components/navigation/BottomNavBar';
 import { motion, AnimatePresence } from 'motion/react';
 
 function AppContent() {
   const location = useLocation();
-  const showNav = location.pathname !== '/' && location.pathname !== '/onboarding';
+  const showNav = location.pathname !== '/' && location.pathname !== '/onboarding' && location.pathname !== '/admin';
 
   return (
-    <div className="min-h-screen flex text-white relative bg-[#050505]">
+    <div className="min-h-screen flex text-[var(--text-primary)] relative bg-[var(--bg-primary)] transition-colors duration-300">
       {showNav && <SideNavBar className="hidden lg:flex" />}
       <main className={`flex-1 min-w-0 ${showNav ? 'lg:pl-[240px] pb-24 lg:pb-0' : ''}`}>
         <AnimatePresence mode="wait">
@@ -36,6 +37,7 @@ function AppContent() {
               <Route path="/hub" element={<HubScreen />} />
               <Route path="/quiz" element={<QuizScreen />} />
               <Route path="/profile" element={<ProfileScreen />} />
+              <Route path="/admin" element={<AdminScreen />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
