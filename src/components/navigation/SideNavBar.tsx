@@ -1,10 +1,13 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Bookmark, User, LayoutGrid, Zap, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function SideNavBar({ className = "" }: { className?: string }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+  const [logoClicks, setLogoClicks] = useState(0);
 
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-500' },
@@ -13,11 +16,27 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
     { icon: LayoutGrid, label: 'Quizzes', path: '/quiz', color: 'text-emerald-500' },
   ];
 
+  const handleLogoClick = () => {
+    setLogoClicks(prev => prev + 1);
+    
+    // Reset clicks after 2 seconds of inactivity
+    const timer = setTimeout(() => setLogoClicks(0), 2000);
+
+    if (logoClicks + 1 >= 3) {
+      clearTimeout(timer);
+      navigate('/admin');
+      setLogoClicks(0);
+    }
+  };
+
   return (
     <aside className={`w-[240px] h-screen fixed left-0 top-0 bg-[var(--bg-secondary)] border-r border-[var(--border-color)] flex flex-col p-8 z-50 transition-colors duration-300 ${className}`}>
       <div className="relative z-10 flex flex-col h-full">
       <div className="mb-12">
-        <div className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
+          onClick={handleLogoClick}
+        >
           <span className="text-2xl font-extrabold tracking-tighter text-[var(--text-primary)]">
             USTED<span className="text-[var(--accent-primary)]">Scholar</span>
           </span>
@@ -56,10 +75,6 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
         </button>
         
         <div className="pt-4 border-t border-[var(--border-color)] space-y-1">
-          <Link to="/admin" className="w-full flex items-center gap-3 px-2 py-2 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors text-xs font-black uppercase tracking-widest">
-            <Settings className="w-4 h-4" />
-            <span>Admin Portal</span>
-          </Link>
           <Link to="/profile" className="w-full flex items-center gap-3 px-2 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs font-medium">
             <User className="w-4 h-4" />
             <span>Profile</span>

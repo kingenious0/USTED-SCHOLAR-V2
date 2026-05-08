@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { Bell, Search, Star, TrendingUp, Zap, Lightbulb, Clock, Loader2 } from 'lucide-react';
@@ -8,11 +8,23 @@ import ThemeToggle from '../components/theme/ThemeToggle';
 
 export default function DashboardScreen() {
   const { userState, openCourse } = useApp();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [secretClicks, setSecretClicks] = useState(0);
 
   const greeting = new Date().getHours() < 12 ? 'Habari za asubuhi' : new Date().getHours() < 17 ? 'Habari za mchana' : 'Habari za jioni';
+
+  const handleSecretClick = () => {
+    setSecretClicks(prev => prev + 1);
+    const timer = setTimeout(() => setSecretClicks(0), 2000);
+    if (secretClicks + 1 >= 5) {
+      clearTimeout(timer);
+      navigate('/admin');
+      setSecretClicks(0);
+    }
+  };
 
   useEffect(() => {
     async function fetchCourses() {
@@ -28,7 +40,6 @@ export default function DashboardScreen() {
     }
     fetchCourses();
   }, []);
-
 
   const sortedCourses = [...courses].sort((a, b) => {
     const aIndex = userState.recentlyOpenedIds?.indexOf(a.id);
@@ -59,7 +70,14 @@ export default function DashboardScreen() {
              <span className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.3em]">{greeting}</span>
              <div className="h-1 w-1 rounded-full bg-[var(--accent-primary)]" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-[var(--text-primary)] transition-colors">Jambo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-primary)] via-[var(--accent-primary)] to-[var(--accent-secondary)]">Scholar!</span></h1>
+          <h1 className="text-4xl font-black tracking-tight text-[var(--text-primary)] transition-colors">
+            Jambo, <span 
+              onClick={handleSecretClick}
+              className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-primary)] via-[var(--accent-primary)] to-[var(--accent-secondary)] cursor-default select-none active:scale-95 transition-transform inline-block"
+            >
+              Scholar!
+            </span>
+          </h1>
           <p className="text-[var(--text-tertiary)] mt-2 text-xs font-black uppercase tracking-widest">{userState.programme || 'IT Education'} • LEVEL {userState.level || '300'}</p>
         </div>
 
