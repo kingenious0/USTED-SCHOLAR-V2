@@ -75,10 +75,7 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
         </button>
         
         <div className="pt-4 border-t border-[var(--border-color)] space-y-1">
-          <Link to="/profile" className="w-full flex items-center gap-3 px-2 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors text-xs font-medium">
-            <User className="w-4 h-4" />
-            <span>Profile</span>
-          </Link>
+          {/* Profile link hidden for now */}
         </div>
         </div>
       </div>

@@ -58,6 +58,9 @@ export default function DashboardScreen() {
     (c.meta_tag || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const recentCourses = filteredCourses.slice(0, 2);
+  const archiveCourses = filteredCourses.slice(2);
+
   return (
     <div className="p-6 pt-20 lg:p-10 max-w-7xl mx-auto flex flex-col gap-10 min-h-screen overflow-y-auto relative pb-28 lg:pb-0 bg-[var(--bg-primary)] transition-colors duration-300">
       {/* Background Orbs */}
@@ -143,120 +146,126 @@ export default function DashboardScreen() {
         </div>
       </div>
       
-      {/* Hero Section: Continue Learning */}
-      {!loading && filteredCourses.length > 0 && (
-        <section className="mb-12 relative z-10">
-          <div className="bg-gradient-to-r from-[var(--bg-secondary)] to-[var(--bg-primary)] p-1 rounded-[3rem] border border-[var(--border-color)] group hover:border-[var(--accent-primary)]/30 transition-all duration-500 overflow-hidden shadow-2xl shadow-blue-500/5">
-            <div className="bg-[var(--bg-secondary)] rounded-[2.8rem] p-8 lg:p-10 flex flex-col lg:flex-row items-center gap-10">
-              <div className="w-full lg:w-1/3 aspect-[4/3] rounded-[2.5rem] overflow-hidden relative shadow-2xl group-hover:scale-[1.02] transition-transform duration-700">
-                <img 
-                  src={filteredCourses[0].thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600'} 
-                  className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700"
-                  alt="Recent Course"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6">
-                   <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">In Progress • 70%</span>
-                   </div>
-                </div>
-              </div>
-              <div className="flex-1 text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--accent-primary)]/10 rounded-full border border-[var(--accent-primary)]/20 mb-6">
-                  <Zap className="w-3 h-3 text-[var(--accent-primary)]" />
-                  <span className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-widest">Jump Back In</span>
-                </div>
-                <h3 className="text-3xl lg:text-4xl font-black text-[var(--text-primary)] mb-4 uppercase tracking-tighter leading-none">
-                  {filteredCourses[0].name}
-                </h3>
-                <p className="text-[var(--text-secondary)] mb-8 max-w-lg leading-relaxed font-medium">
-                  You were last reviewing the core concepts of this module. Your AI Tutor has prepared a quick summary to help you resume.
-                </p>
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                  <Link 
-                    to="/hub"
-                    onClick={() => openCourse(filteredCourses[0])}
-                    className="px-8 py-4 bg-[var(--accent-primary)] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Continue Synthesis
-                  </Link>
-                  <Link 
-                    to="/library"
-                    className="px-8 py-4 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-2xl font-black text-xs uppercase tracking-widest border border-[var(--border-color)] hover:bg-[var(--bg-secondary)] transition-all"
-                  >
-                    Library Archive
-                  </Link>
-                </div>
-              </div>
-            </div>
+      {/* SECTION 1: Continue Learning (Horizontal Netflix Scroll) */}
+      {!loading && recentCourses.length > 0 && !search && (
+        <section className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="h-4 w-1 bg-[var(--accent-primary)] rounded-full" />
+              Continue Learning
+            </h2>
+          </div>
+          
+          <div className="flex gap-6 overflow-x-auto pb-6 -mx-6 px-6 no-scrollbar snap-x">
+            {recentCourses.map((c, i) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex-shrink-0 w-[280px] md:w-[350px] snap-start"
+              >
+                <Link 
+                  to="/hub"
+                  onClick={() => openCourse(c)}
+                  className="block h-full bg-[var(--bg-secondary)] rounded-[2.5rem] overflow-hidden border border-[var(--border-color)] hover:border-[var(--accent-primary)]/30 transition-all group cursor-pointer shadow-xl relative"
+                >
+                  <div className="h-44 relative overflow-hidden">
+                    <img 
+                      src={c.thumbnail_url || `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600`}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      alt={c.name}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent" />
+                    <div className="absolute top-4 left-4 px-3 py-1 bg-[var(--bg-secondary)]/80 backdrop-blur-md rounded-full border border-white/10">
+                      <span className="text-[9px] font-black text-[var(--accent-primary)] uppercase tracking-widest">{c.meta_tag}</span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-tighter mb-4 line-clamp-1">{c.name}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-[10px] font-black text-[var(--text-tertiary)] uppercase">Mastery</span>
+                       <span className="text-[10px] font-black text-[var(--accent-primary)]">70%</span>
+                    </div>
+                    <div className="h-1 bg-[var(--border-color)] rounded-full overflow-hidden">
+                       <div className="h-full bg-[var(--accent-primary)]" style={{ width: '70%' }} />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </section>
       )}
 
-      {/* Active Modules - Professional Vertical Grid */}
-      <section className="course-section relative z-10">
+      {/* SECTION 2: Academic Archive (Vertical Grid) */}
+      <section className="relative z-10 mb-20 lg:mb-0">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-[0.2em] flex items-center gap-3">
-            <div className="h-4 w-1 bg-[var(--accent-primary)] rounded-full" />
-            Recent Activity
+            <div className="h-4 w-1 bg-[var(--accent-secondary)] rounded-full" />
+            {search ? `Search Results (${filteredCourses.length})` : 'Academic Archive'}
           </h2>
-          <Link to="/library" className="text-[var(--accent-primary)] text-[10px] font-black uppercase tracking-[0.2em] hover:underline">View All Archive</Link>
+          {!search && (
+            <div className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest bg-[var(--bg-secondary)] px-4 py-2 rounded-full border border-[var(--border-color)]">
+              {filteredCourses.length} Modules Total
+            </div>
+          )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {loading ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] rounded-[3rem] border border-dashed border-[var(--border-color)]">
-              <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Syncing Academic Library...</span>
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] rounded-[3rem] border border-dashed border-[var(--border-color)]">
-              <Search className="w-8 h-8 text-[var(--text-tertiary)]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">No matching knowledge paths found</span>
-            </div>
-          ) : filteredCourses.slice(0, 4).map((c, i) => (
-            <motion.div
-              key={c.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Link 
-                to="/hub"
-                onClick={() => openCourse(c)}
-                className="block h-full bg-[var(--bg-secondary)] rounded-[2.5rem] overflow-hidden border border-[var(--border-color)] hover:border-[var(--accent-primary)]/30 transition-all group cursor-pointer shadow-lg relative"
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] rounded-[3rem] border border-dashed border-[var(--border-color)]">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Syncing Knowledge Base...</span>
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] rounded-[3rem] border border-dashed border-[var(--border-color)] text-center px-10">
+            <Search className="w-8 h-8 text-[var(--text-tertiary)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">No matching modules found in your current path</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
+            {(search ? filteredCourses : archiveCourses).map((c, i) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (i % 10) * 0.05 }}
               >
-                <div 
-                  className="h-40 flex flex-col justify-end p-8 relative overflow-hidden transition-all duration-500"
-                  style={{ background: i % 4 === 0 ? 'linear-gradient(135deg, #1e3a8a, #2E5BFF)' : i % 4 === 1 ? 'linear-gradient(135deg, #7c2d12, #FFCC22)' : i % 4 === 2 ? 'linear-gradient(135deg, #064e3b, #10b981)' : 'linear-gradient(135deg, #4c1d95, #8b5cf6)' }}
+                <Link 
+                  to="/hub"
+                  onClick={() => openCourse(c)}
+                  className="block h-full bg-[var(--bg-secondary)] rounded-[2rem] overflow-hidden border border-[var(--border-color)] hover:border-[var(--accent-secondary)]/30 transition-all group shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300"
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-150 transition-transform duration-700" />
-                  <div className="relative z-10">
-                    <div className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">{c.meta_tag || 'MODULE'}</div>
-                    <h3 className="text-xl font-black text-white leading-tight tracking-tighter uppercase">{c.name}</h3>
+                  <div className="aspect-[3/4] relative overflow-hidden">
+                    <img 
+                      src={c.thumbnail_url || `https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600`}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      alt={c.name}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    
+                    {/* Level Badge */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-[var(--accent-secondary)] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-sm inline-block mb-1">
+                        {c.meta_tag}
+                      </div>
+                      <h4 className="text-white text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight">
+                        {c.name}
+                      </h4>
+                    </div>
                   </div>
-                </div>
-                <div className="p-8 bg-[var(--bg-secondary)]">
-                  <div className="flex justify-between items-center mb-4">
-                     <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Active</span>
-                     </div>
-                     <span className="text-xs font-black text-[var(--text-primary)] tracking-tighter">70%</span>
-                  </div>
-                  <div className="h-1 bg-[var(--border-color)] rounded-full overflow-hidden">
-                     <motion.div 
-                       initial={{ width: 0 }}
-                       animate={{ width: '70%' }}
-                       className="h-full bg-[#2E5BFF]" 
-                     />
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                </Link>
+              </motion.div>
+            ))}
+            
+            {/* If not searching and we have more, maybe show a "Load More" or just let the grid breathe */}
+            {!search && archiveCourses.length === 0 && recentCourses.length > 0 && (
+               <div className="col-span-full py-10 text-center opacity-30">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em]">End of Archive</p>
+               </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -11,7 +11,6 @@ export default function BottomNavBar({ className = "" }: { className?: string })
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: Bookmark, label: 'Library', path: '/library' },
     { icon: Zap, label: 'Tutor', path: '/hub' },
-    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
