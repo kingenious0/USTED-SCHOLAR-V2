@@ -38,6 +38,8 @@ export function StudyDashboard({ fileId, title }: { fileId: string; title: strin
 
     setLoading(true);
     setError(null);
+    setContent(prev => ({ ...prev, [tab]: "" })); 
+
     try {
       const response = await fetch("/api/summary", {
         method: "POST",
@@ -45,11 +47,34 @@ export function StudyDashboard({ fileId, title }: { fileId: string; title: strin
         body: JSON.stringify({ fileId, prompt: TAB_PROMPTS[tab] })
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to generate content");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to generate content");
+      }
 
-      cache.current[tab] = data.markdown;
-      setContent(prev => ({ ...prev, [tab]: data.markdown }));
+      if (!response.body) throw new Error("No response body stream");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let lastUpdateTime = Date.now();
+
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          accumulated += decoder.decode(value, { stream: true });
+          
+          const now = Date.now();
+          if (now - lastUpdateTime > 50 || done) {
+            setContent(prev => ({ ...prev, [tab]: accumulated }));
+            lastUpdateTime = now;
+          }
+        }
+      }
+
+      cache.current[tab] = accumulated;
     } catch (err: any) {
       setError(err.message);
     } finally {

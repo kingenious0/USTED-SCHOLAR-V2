@@ -37,7 +37,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background-dark flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
         {/* Background Gradients */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-electric-blue/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sunset-orange/10 rounded-full blur-[120px]" />
@@ -52,8 +52,8 @@ export default function OnboardingScreen() {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <div className="mb-10 text-center md:text-left">
-                  <h2 className="text-3xl font-bold text-white mb-2">Select Your Path</h2>
-                  <p className="text-zinc-400">Tell us your Programme of Study to calibrate your AI workspace.</p>
+                  <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Select Your Path</h2>
+                  <p className="text-[var(--text-tertiary)]">Tell us your Programme of Study to calibrate your AI workspace.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
@@ -61,11 +61,8 @@ export default function OnboardingScreen() {
                     <button
                       key={p.name}
                       onClick={() => setSelections(prev => ({ ...prev, programme: p.name }))}
-                      className={`flex items-center gap-4 p-6 rounded-premium border transition-all duration-300 text-left hover:scale-[1.02] ${
-                        selections.programme === p.name 
                           ? 'border-electric-blue bg-electric-blue/5 shadow-[0_0_15px_rgba(46,91,255,0.2)]' 
-                          : 'border-white/5 bg-[#1A1A1A]/60'
-                      }`}
+                          : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                         selections.programme === p.name ? 'bg-electric-blue text-white' : 'bg-white/5 text-zinc-500'
@@ -113,7 +110,7 @@ export default function OnboardingScreen() {
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-white mb-8">Select Your Level</h2>
+                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-8">Select Your Level</h2>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                   {levels.map((l) => (
@@ -121,15 +118,14 @@ export default function OnboardingScreen() {
                       key={l.val}
                       onClick={() => setSelections(prev => ({ ...prev, level: l.val }))}
                       className={`p-6 rounded-premium border transition-all duration-300 text-left relative overflow-hidden active:scale-95 ${
-                        selections.level === l.val 
                           ? 'border-electric-blue bg-electric-blue/5 ring-1 ring-electric-blue/30' 
-                          : 'border-white/5 bg-[#1A1A1A]/60'
+                          : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
                       }`}
                     >
                       <div className={`mb-4 ${selections.level === l.val ? 'text-electric-blue' : 'text-zinc-500'}`}>
                         <GraduationCap className="w-8 h-8" />
                       </div>
-                      <h3 className="font-bold text-white leading-none">Level {l.val}</h3>
+                      <h3 className="font-bold text-[var(--text-primary)] leading-none">Level {l.val}</h3>
                       <p className="text-xs text-zinc-500 mt-1">{l.label}</p>
                       {selections.level === l.val && (
                         <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-electric-blue fill-electric-blue/10" />
@@ -138,16 +134,15 @@ export default function OnboardingScreen() {
                   ))}
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-6">Academic Term</h3>
+                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6">Academic Term</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                   {['1', '2'].map((sem) => (
                     <button
                       key={sem}
                       onClick={() => setSelections(prev => ({ ...prev, semester: sem }))}
                       className={`flex items-center gap-4 p-5 rounded-premium border transition-all duration-300 text-left ${
-                        selections.semester === sem 
                           ? 'border-sunset-orange bg-sunset-orange/5' 
-                          : 'border-white/5 bg-[#1A1A1A]/60'
+                          : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${
@@ -156,7 +151,7 @@ export default function OnboardingScreen() {
                         {sem}
                       </div>
                       <div>
-                        <div className={`font-bold ${selections.semester === sem ? 'text-sunset-orange' : 'text-white'}`}>
+                        <div className={`font-bold ${selections.semester === sem ? 'text-sunset-orange' : 'text-[var(--text-primary)]'}`}>
                           {sem === '1' ? 'First Semester' : 'Second Semester'}
                         </div>
                         <div className="text-[10px] text-zinc-500 uppercase tracking-wider">

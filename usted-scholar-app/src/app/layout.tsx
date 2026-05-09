@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SideNavBar } from "@/components/layout/SideNavBar";
 
 export default function RootLayout({
   children,
@@ -37,14 +38,17 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning className={`${outfit.variable} font-sans min-h-full flex flex-col bg-main text-main`}>
+      <body suppressHydrationWarning className={`${outfit.variable} font-sans min-h-full flex bg-[#050505] text-white`}>
         <ThemeProvider
             attribute="class"
-            defaultTheme="light"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
-          {children}
+          <SideNavBar />
+          <main className="flex-1 lg:pl-64 min-h-screen">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>

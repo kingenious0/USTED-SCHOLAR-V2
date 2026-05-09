@@ -3,14 +3,15 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, UserCircle, Rocket } from "lucide-react";
+import { Home, BookOpen, GraduationCap, Sparkles, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 const navItems = [
-  { name: "Home", href: "/", icon: Home },
+  { name: "Dashboard", href: "/", icon: Home },
+  { name: "AI Tutor", href: "/ai-tutor", icon: Sparkles },
+  { name: "Quizzes", href: "/quizzes", icon: GraduationCap },
   { name: "Library", href: "/library", icon: BookOpen },
-  { name: "Profile", href: "/profile", icon: UserCircle },
 ];
 
 export function SideNavBar() {

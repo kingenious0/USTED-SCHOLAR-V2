@@ -50,55 +50,9 @@ export function LibraryClient({ courses, program, level, semester }: LibraryClie
   }, [courses, search]);
 
   return (
-    <div className="flex h-screen bg-[#050505] dark:bg-[#050505] bg-gray-50 text-gray-900 dark:text-white font-sans overflow-hidden transition-colors duration-300">
-
-      {/* ── LEFT SIDEBAR (Desktop) ── */}
-      <aside className="hidden lg:flex w-[240px] shrink-0 flex-col border-r border-black/10 dark:border-white/5 bg-white dark:bg-[#020202] py-8 px-4 transition-colors duration-300">
-        <div className="px-3 mb-12">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8C033B] to-[#FFCC22] flex items-center justify-center">
-              <span className="text-white font-black text-xs">U</span>
-            </div>
-            <h1 className="text-xl font-black tracking-tighter">
-              <span className="text-[#8C033B]">USTED</span>
-            </h1>
-          </div>
-          <p className="text-[9px] text-gray-400 tracking-[0.2em] uppercase font-semibold">
-            Tech-Modern Learning
-          </p>
-        </div>
-
-        <nav className="space-y-1 flex-1">
-          <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-400 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
-            <Home className="w-4 h-4 opacity-70" />
-            Home
-          </div>
-          <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-[#8C033B] dark:text-white bg-[#8C033B]/10 dark:bg-[#8C033B]/20 border border-[#8C033B]/30 rounded-xl cursor-default">
-            <BookOpen className="w-4 h-4 text-[#8C033B]" />
-            Library
-          </div>
-          <div className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
-            <User className="w-4 h-4 opacity-70" />
-            Profile
-          </div>
-        </nav>
-
-        <div className="mt-auto px-3 pt-6 border-t border-black/10 dark:border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#8C033B] to-[#FFCC22] flex items-center justify-center text-white font-black text-xs shrink-0">
-              ST
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate">AAMUSTED</p>
-              <p className="text-[10px] text-gray-400 truncate">{level} · {semester}</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
+    <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans overflow-hidden transition-colors duration-300">
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-[#050505] transition-colors duration-300">
-
+      <div className="flex-1 flex flex-col min-w-0 bg-[#050505]">
         {/* Top Nav Bar */}
         <header className="sticky top-0 z-30 h-[72px] flex items-center justify-between px-8 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-black/8 dark:border-white/5 shrink-0 transition-colors duration-300">
           {/* Search */}

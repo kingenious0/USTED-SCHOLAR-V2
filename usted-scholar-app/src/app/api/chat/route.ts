@@ -1,36 +1,27 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { getStoragePath, fetchStoragePdfBase64 } from '@/lib/storage';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_WEBAPP_URL || process.env.APPS_SCRIPT_URL || '';
 const APPS_SCRIPT_SECRET = process.env.APPS_SCRIPT_SECRET || '';
 
-// Fetch Base64 PDF from Apps Script with redirect:follow
+// Legacy fallback: fetch Base64 PDF from Apps Script
 async function fetchPdfBase64(fileId: string): Promise<string | null> {
   if (!APPS_SCRIPT_URL) return null;
-
   const scriptUrl = `${APPS_SCRIPT_URL}?fileId=${fileId}&key=${APPS_SCRIPT_SECRET}`;
-
   try {
-    // redirect:'follow' is the key fix — handles Google's internal redirect chain
     const response = await fetch(scriptUrl, {
       redirect: 'follow',
       headers: { 'Accept': 'text/plain' },
     });
-
     if (!response.ok) return null;
-
     const base64Data = await response.text();
-
-    if (!base64Data || base64Data.startsWith('Error') || base64Data.includes('<!doctype')) {
-      console.warn('Apps Script returned invalid data for chat:', base64Data.slice(0, 100));
-      return null;
-    }
-
+    if (!base64Data || base64Data.startsWith('Error') || base64Data.includes('<!doctype')) return null;
     return base64Data.trim();
-  } catch (e: any) {
-    console.error('Chat PDF fetch error:', e?.message);
+  } catch (e) {
     return null;
   }
 }
@@ -41,15 +32,23 @@ export async function POST(req: Request) {
 
     let pdfInlineData = null;
 
-    // Fetch PDF if fileId provided — chat works with or without PDF context
+    // Fetch PDF context from Storage or Drive
     if (fileId) {
-      const base64Data = await fetchPdfBase64(fileId);
+      const storagePath = await getStoragePath(fileId);
+      let base64Data = null;
+      
+      if (storagePath) {
+        base64Data = await fetchStoragePdfBase64(storagePath);
+      }
+      
+      if (!base64Data) {
+        base64Data = await fetchPdfBase64(fileId);
+      }
+
       if (base64Data) {
         pdfInlineData = {
           inlineData: { data: base64Data, mimeType: 'application/pdf' }
         };
-      } else {
-        console.warn(`PDF unavailable for fileId ${fileId} — chat continues without context`);
       }
     }
 

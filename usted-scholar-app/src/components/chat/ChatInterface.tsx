@@ -128,15 +128,24 @@ export function ChatInterface({ courseId, fileId }: { courseId: string, fileId: 
       setMessages(prev => [...prev, { id: aiMsgId, role: "ai", content: "" }]);
       setIsLoading(false);
 
+      let accumulatedContent = "";
+      let lastUpdateTime = Date.now();
+      const THROTTLE_MS = 50; // Update UI every 50ms max
+
       let done = false;
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
-          const chunkText = decoder.decode(value, { stream: true });
-          setMessages(prev => prev.map(m =>
-            m.id === aiMsgId ? { ...m, content: m.content + chunkText } : m
-          ));
+          accumulatedContent += decoder.decode(value, { stream: true });
+          
+          const now = Date.now();
+          if (now - lastUpdateTime > THROTTLE_MS || done) {
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId ? { ...m, content: accumulatedContent } : m
+            ));
+            lastUpdateTime = now;
+          }
         }
       }
     } catch (error: any) {
