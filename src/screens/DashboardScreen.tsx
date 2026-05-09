@@ -161,7 +161,7 @@ export default function DashboardScreen() {
                 <div className="absolute bottom-6 left-6 right-6">
                    <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">In Progress • 70%</span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">In Progress • 70%</span>
                    </div>
                 </div>
               </div>
@@ -293,14 +293,14 @@ export default function DashboardScreen() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       alt={c.name}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/90 via-[var(--bg-primary)]/20 to-transparent" />
                     
                     {/* Level Badge */}
                     <div className="absolute bottom-4 left-4 right-4">
                       <div className="bg-[var(--accent-secondary)] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-sm inline-block mb-1">
                         {c.meta_tag}
                       </div>
-                      <h4 className="text-white text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight">
+                      <h4 className="text-[var(--text-primary)] text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight">
                         {c.name}
                       </h4>
                     </div>

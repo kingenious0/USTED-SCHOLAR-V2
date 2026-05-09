@@ -42,7 +42,7 @@ export default function ProfileScreen() {
           </motion.div>
         </div>
         
-        <h2 className="text-3xl font-bold text-white mb-2 leading-none">Chidi Okafor</h2>
+        <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2 leading-none">Chidi Okafor</h2>
         <p className="text-zinc-500 font-medium mb-4">{userState.programme} • Level {userState.level}</p>
         
         <div className="flex gap-4">
@@ -77,24 +77,24 @@ export default function ProfileScreen() {
       <div className="space-y-10">
         {settingsGroups.map((group, i) => (
           <div key={i}>
-            <h3 className="text-xs font-extrabold text-white/40 uppercase tracking-[0.3em] mb-6 px-2">{group.title}</h3>
+            <h3 className="text-xs font-extrabold text-[var(--text-tertiary)] uppercase tracking-[0.3em] mb-6 px-2">{group.title}</h3>
             <div className="space-y-2">
               {group.items.map((item, j) => (
                 <button
                   key={j}
                   onClick={item.action}
-                  className="w-full flex items-center justify-between p-5 bg-surface-dark border border-white/5 rounded-2xl hover:border-white/10 transition-all group active:scale-[0.99]"
+                  className="w-full flex items-center justify-between p-5 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl hover:border-[var(--accent-primary)]/30 transition-all group active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white/40 group-hover:text-electric-blue transition-colors">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)] group-hover:text-electric-blue transition-colors">
                        <item.icon className="w-6 h-6" />
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-white transition-colors">{item.label}</p>
-                      <p className="text-xs text-white/40 font-medium">{item.desc}</p>
+                      <p className="font-bold text-[var(--text-primary)] transition-colors">{item.label}</p>
+                      <p className="text-xs text-[var(--text-tertiary)] font-medium">{item.desc}</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-white/10 group-hover:text-electric-blue transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-[var(--border-color)] group-hover:text-electric-blue transition-colors" />
                 </button>
               ))}
             </div>

@@ -164,13 +164,13 @@ export default function LibraryScreen() {
                       alt={file.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/90 via-[var(--bg-primary)]/20 to-transparent" />
                     
                     <div className="absolute bottom-5 left-5 right-5">
                       <div className="bg-[var(--accent-secondary)] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-sm inline-block mb-2">
                         {file.meta_tag}
                       </div>
-                      <h4 className="text-white text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight group-hover:text-[var(--accent-secondary)] transition-colors">
+                      <h4 className="text-[var(--text-primary)] text-xs font-black uppercase tracking-tighter line-clamp-2 leading-tight group-hover:text-[var(--accent-secondary)] transition-colors">
                         {file.name}
                       </h4>
                     </div>

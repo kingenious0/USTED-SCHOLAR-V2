@@ -33,7 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [userState, _setUserState] = useState<UserState>(savedState.userState || {
     hasCompletedOnboarding: false,
-    theme: 'dark',
+    theme: 'light',
     recentlyOpenedIds: [],
   });
   
