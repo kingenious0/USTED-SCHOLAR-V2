@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Bookmark, User, LayoutGrid, Zap, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { Home, Bookmark, User, LayoutGrid, Zap, Settings, HelpCircle, LogOut, Brain } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function SideNavBar({ className = "" }: { className?: string }) {
@@ -13,6 +13,7 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
     { icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-500' },
     { icon: Bookmark, label: 'Library', path: '/library', color: 'text-indigo-500' },
     { icon: Zap, label: 'AI Tutor', path: '/hub', color: 'text-amber-500' },
+    { icon: Brain, label: 'Flashcards', path: '/flashcards', color: 'text-indigo-600' },
     { icon: LayoutGrid, label: 'Quizzes', path: '/quiz', color: 'text-emerald-500' },
   ];
 

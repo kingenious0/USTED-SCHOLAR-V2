@@ -287,3 +287,32 @@ export async function generateQuiz(fileId: string) {
   const result = await model.generateContent([{ text: `Context: ${context}\n\nGenerate quiz JSON with "questions" array. Each question must have "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }]);
   return JSON.parse(result.response.text());
 }
+
+// Service: Generate Flashcards
+export async function generateFlashcards(fileId: string) {
+  let query = supabase.from('courses').select('full_text, synthesis');
+  if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+  else query = query.eq('file_id', fileId);
+  const { data: cached } = await query.single();
+  const context = cached?.full_text || cached?.synthesis || '';
+
+  const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-2.5-flash-lite', 
+    generationConfig: { responseMimeType: "application/json" } 
+  });
+
+  const prompt = `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. 
+  Return a "cards" array where each object has:
+  "front": (A concise question or core concept name),
+  "back": (A clear, informative explanation or definition).
+  Focus on the most examinable points.`;
+
+  try {
+    const result = await model.generateContent([{ text: prompt }]);
+    return JSON.parse(result.response.text());
+  } catch (error) {
+    console.error('Flashcard Generation Error:', error);
+    throw error;
+  }
+}

@@ -61,22 +61,25 @@ export default function OnboardingScreen() {
                     <button
                       key={p.name}
                       onClick={() => setSelections(prev => ({ ...prev, programme: p.name }))}
-                          ? 'border-electric-blue bg-electric-blue/5 shadow-[0_0_15px_rgba(46,91,255,0.2)]' 
+                      className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
+                        selections.programme === p.name 
+                          ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5 shadow-[0_0_15px_rgba(46,91,255,0.2)]' 
                           : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
+                      }`}
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        selections.programme === p.name ? 'bg-electric-blue text-white' : 'bg-white/5 text-zinc-500'
+                        selections.programme === p.name ? 'bg-[var(--accent-primary)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'
                       }`}>
                         <p.icon className="w-6 h-6" />
                       </div>
                       <div className="flex-1">
-                        <div className={`font-bold font-sans ${selections.programme === p.name ? 'text-electric-blue' : 'text-white'}`}>
+                        <div className={`font-bold font-sans ${selections.programme === p.name ? 'text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'}`}>
                           {p.name}
                         </div>
                         <div className="text-xs text-zinc-500">{p.desc}</div>
                       </div>
                       {selections.programme === p.name && (
-                        <CheckCircle2 className="w-5 h-5 text-electric-blue fill-electric-blue/10" />
+                        <CheckCircle2 className="w-5 h-5 text-[var(--accent-primary)] fill-[var(--accent-primary)]/10" />
                       )}
                     </button>
                   ))}
@@ -105,8 +108,8 @@ export default function OnboardingScreen() {
                      <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 2 of 2</p>
                      <p className="text-electric-blue font-bold">Academic Path</p>
                   </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-electric-blue w-full shadow-[0_0_8px_rgba(46,91,255,0.6)]" />
+                  <div className="h-1.5 w-full bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+                    <div className="h-full bg-[var(--accent-primary)] w-full shadow-[0_0_8px_rgba(46,91,255,0.3)]" />
                   </div>
                 </div>
 
@@ -118,17 +121,18 @@ export default function OnboardingScreen() {
                       key={l.val}
                       onClick={() => setSelections(prev => ({ ...prev, level: l.val }))}
                       className={`p-6 rounded-premium border transition-all duration-300 text-left relative overflow-hidden active:scale-95 ${
-                          ? 'border-electric-blue bg-electric-blue/5 ring-1 ring-electric-blue/30' 
+                        selections.level === l.val 
+                          ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5 ring-1 ring-[var(--accent-primary)]/30' 
                           : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
                       }`}
                     >
-                      <div className={`mb-4 ${selections.level === l.val ? 'text-electric-blue' : 'text-zinc-500'}`}>
+                      <div className={`mb-4 ${selections.level === l.val ? 'text-[var(--accent-primary)]' : 'text-[var(--text-tertiary)]'}`}>
                         <GraduationCap className="w-8 h-8" />
                       </div>
                       <h3 className="font-bold text-[var(--text-primary)] leading-none">Level {l.val}</h3>
                       <p className="text-xs text-zinc-500 mt-1">{l.label}</p>
                       {selections.level === l.val && (
-                        <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-electric-blue fill-electric-blue/10" />
+                        <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-[var(--accent-primary)] fill-[var(--accent-primary)]/10" />
                       )}
                     </button>
                   ))}
@@ -141,17 +145,18 @@ export default function OnboardingScreen() {
                       key={sem}
                       onClick={() => setSelections(prev => ({ ...prev, semester: sem }))}
                       className={`flex items-center gap-4 p-5 rounded-premium border transition-all duration-300 text-left ${
-                          ? 'border-sunset-orange bg-sunset-orange/5' 
+                        selections.semester === sem 
+                          ? 'border-[var(--accent-secondary)] bg-[var(--accent-secondary)]/5' 
                           : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg ${
-                        selections.semester === sem ? 'bg-sunset-orange text-white' : 'bg-white/5 text-zinc-500'
+                        selections.semester === sem ? 'bg-[var(--accent-secondary)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'
                       }`}>
                         {sem}
                       </div>
                       <div>
-                        <div className={`font-bold ${selections.semester === sem ? 'text-sunset-orange' : 'text-[var(--text-primary)]'}`}>
+                        <div className={`font-bold ${selections.semester === sem ? 'text-[var(--accent-secondary)]' : 'text-[var(--text-primary)]'}`}>
                           {sem === '1' ? 'First Semester' : 'Second Semester'}
                         </div>
                         <div className="text-[10px] text-zinc-500 uppercase tracking-wider">
@@ -165,7 +170,7 @@ export default function OnboardingScreen() {
                 <button
                   disabled={!selections.level || !selections.semester}
                   onClick={handleComplete}
-                  className="w-full py-5 bg-electric-blue text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-5 bg-[var(--accent-primary)] text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                 >
                   Launch Workspace
                   <ArrowRight className="w-5 h-5" />

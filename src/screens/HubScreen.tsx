@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2 } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 
@@ -15,9 +15,9 @@ export default function HubScreen() {
   ]);
   const [input, setInput] = useState('');
   const [synthesis, setSynthesis] = useState('');
+  const [activeTab, setActiveTab] = useState<'synthesis' | 'chat'>('synthesis');
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [errorCooldown, setErrorCooldown] = useState(0);
-
   const [synthesisStage, setSynthesisStage] = useState('');
 
   useEffect(() => {
@@ -111,7 +111,34 @@ export default function HubScreen() {
             </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 lg:p-16 scroll-smooth bg-[var(--bg-primary)] custom-scrollbar relative z-10">
+        {/* Mobile Tab Switcher */}
+        <div className="flex lg:hidden bg-[var(--bg-secondary)] border-b border-[var(--border-color)] p-2 sticky top-0 z-40">
+           <div className="flex w-full bg-[var(--bg-tertiary)] rounded-xl p-1 relative">
+              <motion.div 
+                className="absolute top-1 bottom-1 bg-[var(--bg-primary)] rounded-lg shadow-sm border border-[var(--border-color)]"
+                initial={false}
+                animate={{ 
+                  left: activeTab === 'synthesis' ? '4px' : '50%',
+                  width: 'calc(50% - 4px)'
+                }}
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              />
+              <button 
+                onClick={() => setActiveTab('synthesis')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors ${activeTab === 'synthesis' ? 'text-[var(--accent-primary)]' : 'text-[var(--text-tertiary)]'}`}
+              >
+                Synthesis
+              </button>
+              <button 
+                onClick={() => setActiveTab('chat')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors ${activeTab === 'chat' ? 'text-[var(--accent-primary)]' : 'text-[var(--text-tertiary)]'}`}
+              >
+                AI Assistant
+              </button>
+           </div>
+        </div>
+
+        <div className={`flex-1 overflow-y-auto p-8 lg:p-16 scroll-smooth bg-[var(--bg-primary)] custom-scrollbar relative z-10 ${activeTab === 'chat' ? 'hidden lg:block' : 'block'}`}>
            <div className="max-w-3xl mx-auto">
              {isSynthesizing ? (
                 <div className="flex flex-col items-center justify-center h-full py-32 space-y-6 text-center">
@@ -152,7 +179,7 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className="w-full lg:w-[400px] h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0">
+      <aside className={`w-full lg:w-[400px] h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
           <header className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center shadow-lg shadow-[var(--accent-primary)]/20">
@@ -224,18 +251,24 @@ export default function HubScreen() {
          </div>
 
          <div className="p-6 bg-[var(--bg-primary)] border-t border-[var(--border-color)] space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
                <button 
                 onClick={() => handleSend("Summarize the key concepts of this section in bullet points.")}
-                className="py-2.5 px-3 bg-[var(--bg-tertiary)] rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 transition-all text-center border border-[var(--accent-primary)]/20"
+                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 transition-all text-center border border-[var(--accent-primary)]/10"
                >
-                 Summarize
+                 Summary
                </button>
                <Link 
-                to="/quiz"
-                className="py-2.5 px-3 bg-[var(--bg-tertiary)] rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5 transition-all text-center border border-[var(--accent-secondary)]/20"
+                to="/flashcards"
+                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5 transition-all text-center border border-[var(--accent-secondary)]/10"
                >
-                 Quiz Me
+                 Deck
+               </Link>
+               <Link 
+                to="/quiz"
+                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/5 transition-all text-center border border-emerald-500/10"
+               >
+                 Quiz
                </Link>
             </div>
             
