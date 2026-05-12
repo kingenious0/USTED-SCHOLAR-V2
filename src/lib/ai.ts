@@ -218,14 +218,15 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
 }
 
 // Service: Chat with Document
-export async function streamChat(fileId: string, message: string, history: any[], onUpdate: (text: string) => void) {
+export async function streamChat(fileId: string, message: string, history: any[], onUpdate: (text: string) => void, synthesisContext?: string, imageFile?: File | null) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
   else query = query.eq('file_id', fileId);
   const { data: cached } = await query.maybeSingle();
   const systemContext = cached?.full_text || cached?.synthesis || '';
 
-  if (GROQ_API_KEY && GROQ_API_KEY !== 'your_groq_api_key_here') {
+  // Skip Groq/Cerebras if there's an image attached, because we need Gemini Vision
+  if (!imageFile && GROQ_API_KEY && GROQ_API_KEY !== 'your_groq_api_key_here') {
     try {
       const groq = new Groq({ apiKey: GROQ_API_KEY, dangerouslyAllowBrowser: true });
       const chatCompletion = await groq.chat.completions.create({
@@ -248,8 +249,17 @@ export async function streamChat(fileId: string, message: string, history: any[]
 
   const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-  const contents = history.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
-  contents.push({ role: 'user', parts: [{ text: message }] });
+  const contents: any[] = history.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
+  
+  const currentParts: any[] = [{ text: message }];
+  
+  if (imageFile) {
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+    currentParts.push({ inlineData: { data: base64, mimeType: imageFile.type } });
+  }
+
+  contents.push({ role: 'user', parts: currentParts });
   const result = await model.generateContentStream({ contents });
   let text = '';
   for await (const chunk of result.stream) {

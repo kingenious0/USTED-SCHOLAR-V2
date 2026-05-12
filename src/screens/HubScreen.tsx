@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 
@@ -19,6 +19,45 @@ export default function HubScreen() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [errorCooldown, setErrorCooldown] = useState(0);
   const [synthesisStage, setSynthesisStage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be less than 5MB');
+            return;
+          }
+          setSelectedImage(file);
+          const reader = new FileReader();
+          reader.onloadend = () => setImagePreview(reader.result as string);
+          reader.readAsDataURL(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     async function fetchSynthesis() {
@@ -53,12 +92,15 @@ export default function HubScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async (text: string = input) => {
-    if (typeof text !== 'string' || !text.trim() || isLoading || errorCooldown > 0) return;
+    if ((!text.trim() && !selectedImage) || isLoading || errorCooldown > 0) return;
     
     const targetId = selectedFile?.file_id || selectedFile?.id;
-    const userMsg = { role: 'user', text };
+    const userMsg = { role: 'user', text, imageUrl: imagePreview };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    const currentImage = selectedImage;
+    setSelectedImage(null);
+    setImagePreview(null);
     setIsLoading(true);
 
     try {
@@ -70,7 +112,7 @@ export default function HubScreen() {
         setMessages(prev => prev.map(m => 
           m.id === aiMsgId ? { ...m, text: accumulated } : m
         ));
-      }, synthesis);
+      }, synthesis, currentImage);
     } catch (error: any) {
       console.error('Chat error:', error);
       setIsLoading(false);
@@ -81,10 +123,8 @@ export default function HubScreen() {
 
   return (
     <div className="h-[100dvh] lg:h-screen flex flex-col lg:flex-row bg-[var(--bg-primary)] overflow-hidden relative transition-colors duration-300">
-      {/* Mobile Top Header Spacer */}
-      <div className="h-16 lg:hidden shrink-0" />
       {/* Left: PDF/Document Viewer */}
-      <section className="flex-1 flex flex-col min-h-0 border-r border-[var(--border-color)] relative">
+      <section className={`${activeTab === 'synthesis' ? 'flex-1' : 'flex-none'} flex flex-col min-h-0 border-r border-[var(--border-color)] relative transition-all duration-300 pb-20 lg:pb-0`}>
         {/* Abstract Background Glow */}
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-electric-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -179,8 +219,8 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className={`w-full lg:w-[400px] h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
-          <header className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
+      <aside className={`w-full lg:w-[400px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-20 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
+          <header className="p-6 border-b border-[var(--border-color)] hidden lg:flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center shadow-lg shadow-[var(--accent-primary)]/20">
                 <Sparkles className="w-6 h-6 text-white fill-white" />
@@ -198,7 +238,7 @@ export default function HubScreen() {
             </Link>
           </header>
 
-         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 custom-scrollbar">
             <AnimatePresence>
               {messages.map((m, i) => (
                 <motion.div 
@@ -212,6 +252,9 @@ export default function HubScreen() {
                       ? 'bg-[var(--accent-primary)] text-white rounded-tr-none shadow-md shadow-[var(--accent-primary)]/10' 
                       : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border-color)] shadow-sm'
                   }`}>
+                    {m.imageUrl && (
+                      <img src={m.imageUrl} alt="Uploaded reference" className="max-w-full h-auto rounded-lg mb-2 object-cover max-h-48" />
+                    )}
                     {m.role === 'ai' ? (
                       m.text ? (
                         <div className="prose dark:prose-invert prose-sm max-w-none 
@@ -248,43 +291,64 @@ export default function HubScreen() {
                 </motion.div>
               ))}
             </AnimatePresence>
-         </div>
-
-         <div className="p-6 bg-[var(--bg-primary)] border-t border-[var(--border-color)] space-y-4">
+          </div>
+          <div className="p-4 bg-[var(--bg-primary)] border-t border-[var(--border-color)] space-y-3">
             <div className="grid grid-cols-3 gap-2">
                <button 
                 onClick={() => handleSend("Summarize the key concepts of this section in bullet points.")}
-                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 transition-all text-center border border-[var(--accent-primary)]/10"
+                className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 transition-all text-center border border-[var(--accent-primary)]/10"
                >
                  Summary
                </button>
                <Link 
                 to="/flashcards"
-                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5 transition-all text-center border border-[var(--accent-secondary)]/10"
+                className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5 transition-all text-center border border-[var(--accent-secondary)]/10"
                >
                  Deck
                </Link>
                <Link 
                 to="/quiz"
-                className="py-2.5 px-2 bg-[var(--bg-tertiary)] rounded-xl text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/5 transition-all text-center border border-emerald-500/10"
+                className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/5 transition-all text-center border border-emerald-500/10"
                >
                  Quiz
                </Link>
             </div>
             
             <div className="relative group">
+              {imagePreview && (
+                <div className="absolute bottom-full mb-2 left-0 w-32 h-32 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)] shadow-lg overflow-hidden group">
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <button onClick={() => { setSelectedImage(null); setImagePreview(null); }} className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-black/70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               <textarea 
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder="Ask and it shall be given unto thee..."
-                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-2xl py-4 pl-5 pr-14 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]/50 resize-none h-24 placeholder:text-[var(--text-tertiary)]"
+                onPaste={handlePaste}
+                placeholder="Ask or upload an image..."
+                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-12 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]/30 resize-none h-12 min-h-[48px] max-h-32 placeholder:text-[var(--text-tertiary)] custom-scrollbar transition-all"
+              />
+              <input 
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageSelect}
               />
               <button 
-                onClick={() => handleSend()}
-                className="absolute bottom-4 right-4 p-2.5 bg-[var(--accent-primary)] text-white rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent-primary)]/20"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-1.5 left-1.5 p-2 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors rounded-lg hover:bg-[var(--accent-primary)]/10"
               >
-                <Send className="w-5 h-5" />
+                <ImagePlus className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => handleSend()}
+                className="absolute bottom-1.5 right-1.5 p-2 bg-[var(--accent-primary)] text-white rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[var(--accent-primary)]/20"
+              >
+                <Send className="w-4 h-4" />
               </button>
             </div>
          </div>
