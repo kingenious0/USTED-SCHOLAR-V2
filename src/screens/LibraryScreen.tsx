@@ -21,27 +21,29 @@ export default function LibraryScreen() {
   useEffect(() => {
     async function fetchCourses() {
       try {
-        let query = supabase.from('courses').select('*').neq('meta_tag', 'L200_S2');
+        let query = supabase.from('courses').select('*');
+
+        // Filter by level + semester using meta_tag (always available)
+        if (userState.level && userState.semester) {
+          const metaTag = `L${userState.level}_S${userState.semester}`;
+          query = query.eq('meta_tag', metaTag);
+        }
 
         if (userState.programme) {
-          // Try programme-filtered query (requires 'programme' column in DB)
+          // Use new array column with contains — matches if programme is in the array OR GENERAL is in the array
           const { data, error } = await query
-            .or(`programme.eq.${userState.programme},programme.eq.GENERAL,programme.is.null`)
+            .or(`programmes.cs.{"${userState.programme}"},programmes.cs.{GENERAL},programme.eq."${userState.programme}",programme.eq.GENERAL,programme.is.null`)
             .order('name', { ascending: true });
 
-          if (error) throw error; // column might not exist yet — fallback below
+          if (error) throw error;
           if (data) { setFiles(data); setLoading(false); return; }
         }
 
-        // Fallback: fetch all courses (no programme filter)
-        const { data, error } = await supabase
-          .from('courses')
-          .select('*')
-          .neq('meta_tag', 'L200_S2')
-          .order('name', { ascending: true });
+        // Fallback: just level+semester filter, no programme filter
+        const { data, error } = await query.order('name', { ascending: true });
         if (!error && data) setFiles(data);
       } catch {
-        // Silent fallback — load everything
+        // Final fallback — no filters at all, show everything
         const { data } = await supabase.from('courses').select('*').order('name', { ascending: true });
         if (data) setFiles(data);
       } finally {
@@ -49,7 +51,7 @@ export default function LibraryScreen() {
       }
     }
     fetchCourses();
-  }, [userState.programme]);
+  }, [userState.programme, userState.level, userState.semester]);
 
   const filteredFiles = files.filter(f =>
     (f.name || '').toLowerCase().includes(search.toLowerCase()) ||

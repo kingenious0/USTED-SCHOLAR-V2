@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail } from 'lucide-react';
+import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail, Loader2 } from 'lucide-react';
 import { ACADEMIC_DATA } from '../lib/academicData';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function OnboardingScreen() {
   const { setUserState } = useApp();
@@ -12,6 +13,7 @@ export default function OnboardingScreen() {
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [checking, setChecking] = useState(false);
   
   const [selections, setSelections] = useState({
     programme: '',
@@ -34,6 +36,40 @@ export default function OnboardingScreen() {
       semester: selections.semester as any
     });
     navigate('/library');
+  };
+
+  // Check live DB — if any courses exist for this programme, it's ready
+  const handleConfirmPath = async () => {
+    if (!selections.programme) return;
+    setChecking(true);
+    try {
+      const { count } = await supabase
+        .from('courses')
+        .select('id', { count: 'exact', head: true })
+        .or(`programmes.cs.{"${selections.programme}"},programme.eq.${selections.programme}`);
+
+      if (count && count > 0) {
+        setStep(2);
+      } else {
+        // Also allow if programme is marked isReady in code (for IT/Cyber before column exists)
+        const programData = ACADEMIC_DATA.programs.find(p => p.name === selections.programme);
+        if (programData?.isReady) {
+          setStep(2);
+        } else {
+          setShowWaitlist(true);
+        }
+      }
+    } catch {
+      // DB error — fall back to isReady flag
+      const programData = ACADEMIC_DATA.programs.find(p => p.name === selections.programme);
+      if (programData?.isReady) {
+        setStep(2);
+      } else {
+        setShowWaitlist(true);
+      }
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -77,19 +113,15 @@ export default function OnboardingScreen() {
                 </div>
 
                 <button
-                  disabled={!selections.programme}
-                  onClick={() => {
-                    const selectedProgramData = ACADEMIC_DATA.programs.find(p => p.name === selections.programme);
-                    if (selectedProgramData?.isReady) {
-                      setStep(2);
-                    } else {
-                      setShowWaitlist(true);
-                    }
-                  }}
+                  disabled={!selections.programme || checking}
+                  onClick={handleConfirmPath}
                   className="w-full py-5 bg-electric-blue text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
                 >
-                  Confirm Path
-                  <ChevronRight className="w-5 h-5" />
+                  {checking ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Checking availability...</>
+                  ) : (
+                    <>Confirm Path <ChevronRight className="w-5 h-5" /></>
+                  )}
                 </button>
               </motion.div>
             )}

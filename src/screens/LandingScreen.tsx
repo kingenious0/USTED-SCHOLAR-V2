@@ -1,85 +1,113 @@
-import { Link } from 'react-router-dom';
-import { PlayCircle, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, BookOpen, Brain, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../context/AppContext';
+import { useEffect } from 'react';
 
 export default function LandingScreen() {
   const { userState } = useApp();
-  return (
-    <div className="relative min-h-screen pt-16 flex items-center justify-center overflow-hidden bg-[var(--bg-primary)] transition-colors duration-300">
-      {/* Decorative Glows */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#2E5BFF]/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#FFCC22]/5 blur-[100px] rounded-full" />
-      
-      <div className="container mx-auto px-6 text-center z-10">
-        <motion.div
-           initial={{ opacity: 0, scale: 0.9 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ duration: 0.5 }}
-           className="mb-8 inline-block px-4 py-1 rounded-full border border-[#2E5BFF]/30 text-[#2E5BFF] text-xs font-black tracking-[0.2em] uppercase bg-[#2E5BFF]/5"
-        >
-          AI-Powered Learning Platform
-        </motion.div>
-        
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-black text-[var(--text-primary)] mb-6 leading-tight tracking-tighter"
-        >
-          Elevate Your <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2E5BFF] to-[#FFCC22]">
-            Academic Excellence
-          </span>
-        </motion.h1>
+  const navigate = useNavigate();
 
-        <motion.p 
+  useEffect(() => {
+    if (userState.hasCompletedOnboarding) {
+      navigate('/library', { replace: true });
+    }
+  }, []);
+
+  const features = [
+    { icon: Brain, label: 'AI Synthesis', desc: 'Instant insights from your course materials' },
+    { icon: BookOpen, label: 'Smart Library', desc: 'All your modules, organised by programme' },
+    { icon: Zap, label: 'Quiz & Flash', desc: 'Reinforce learning with AI-generated practice' },
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg-primary)] transition-colors duration-300 px-6 py-16 relative overflow-hidden">
+
+      {/* Subtle background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#2E5BFF]/8 blur-[140px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-[#FFCC22]/5 blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-lg mx-auto text-center relative z-10">
+
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full border border-[#2E5BFF]/25 bg-[#2E5BFF]/6 text-[#2E5BFF] text-[10px] font-black tracking-[0.25em] uppercase"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#2E5BFF] animate-pulse" />
+          AAMUSTED · AI-Powered Learning
+        </motion.div>
+
+        {/* Wordmark */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.08 }}
+          className="mb-4"
+        >
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none text-[var(--text-primary)]">
+            USTED<span className="text-transparent bg-clip-text bg-gradient-to-br from-[#2E5BFF] to-[#FFCC22]">Scholar</span>
+          </h1>
+        </motion.div>
+
+        {/* Tagline */}
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-[var(--text-tertiary)] text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium"
+          transition={{ duration: 0.5, delay: 0.16 }}
+          className="text-[var(--text-tertiary)] text-base md:text-lg font-medium leading-relaxed mb-10 max-w-sm mx-auto"
         >
-          Harness the precision of artificial intelligence designed for the modern African scholar. 
-          Unlock deep insights, manage complex research, and master your curriculum.
+          Your AI study companion for AAMUSTED. Built for the modern Ghanaian scholar.
         </motion.p>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          transition={{ duration: 0.5, delay: 0.24 }}
         >
-          <Link 
-            to={userState.hasCompletedOnboarding ? "/library" : "/onboarding"}
-            className="px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-lg hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/20 flex items-center justify-center gap-2"
+          <Link
+            to="/onboarding"
+            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
           >
             Get Started
             <ArrowRight className="w-5 h-5" />
           </Link>
-          {/* <button className="px-10 py-5 border border-white/10 text-white rounded-2xl font-black text-lg hover:bg-white/5 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
-            <PlayCircle className="w-6 h-6" />
-            Watch Demo
-          </button> */}
         </motion.div>
 
-        {/* Hero Image Mockup */}
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-20 relative max-w-4xl mx-auto"
+        {/* Feature pills */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex flex-wrap justify-center gap-3 mt-14"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#2E5BFF] to-[#FFCC22] rounded-[3rem] blur opacity-20" />
-          <div className="relative bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2.5rem] overflow-hidden aspect-video shadow-2xl">
-            <img 
-              referrerPolicy="no-referrer"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQ7rao-te96swf2gWWOUtgObUF2XrmWUIvaxzP5hnN9zOy7DccinYqmpTkPQbDuYBnBCs4NAAyz2bHpdAQHo7hu0mah990dhzosfLX2p5ta4BagNN--kctFvAFFpwdEEZpqOS6YEwTPDtVNcBMlpwdexRDWWmnOYx8VXiIMGPkkT5pQ0U1hBpP04X1eMek1VFwye42VjfZhf_B6Y6PRR9dYxj7sUPN_UXzGJXQISzNzcq8i40FHmRVst7FFY48GjwlrNUvmV3svcY"
-              alt="Platform Interface"
-              className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/80 via-transparent to-transparent" />
-          </div>
+          {features.map(({ icon: Icon, label, desc }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2.5 bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl"
+            >
+              <Icon className="w-4 h-4 text-[#2E5BFF] flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-[10px] font-black text-[var(--text-primary)] uppercase tracking-widest">{label}</p>
+                <p className="text-[9px] text-[var(--text-tertiary)] font-medium">{desc}</p>
+              </div>
+            </div>
+          ))}
         </motion.div>
+
+        {/* Footer note */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+          className="mt-12 text-[9px] font-bold text-[var(--text-tertiary)] uppercase tracking-[0.25em]"
+        >
+          Exclusively for AAMUSTED Students & Staff
+        </motion.p>
+
       </div>
     </div>
   );

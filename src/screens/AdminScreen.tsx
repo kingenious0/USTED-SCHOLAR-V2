@@ -24,14 +24,36 @@ export default function AdminScreen() {
   const [name, setName] = useState('');
   const [level, setLevel] = useState('100');
   const [semester, setSemester] = useState('1');
-  const [programme, setProgramme] = useState('');
+  const [programmes, setProgrammes] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
+
+  const toggleProgramme = (val: string) => {
+    if (val === 'GENERAL') {
+      setProgrammes(prev => prev.includes('GENERAL') ? [] : ['GENERAL']);
+      return;
+    }
+    setProgrammes(prev =>
+      prev.includes(val)
+        ? prev.filter(p => p !== val)
+        : [...prev.filter(p => p !== 'GENERAL'), val]
+    );
+  };
 
   // Edit Modal State
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
   const [editSaving, setEditSaving] = useState(false);
-
   const [editError, setEditError] = useState<string | null>(null);
+  const [editProgrammes, setEditProgrammes] = useState<string[]>([]);
+
+  const toggleEditProgramme = (val: string) => {
+    if (val === 'GENERAL') {
+      setEditProgrammes(prev => prev.includes('GENERAL') ? [] : ['GENERAL']);
+      return;
+    }
+    setEditProgrammes(prev =>
+      prev.includes(val) ? prev.filter(p => p !== val) : [...prev.filter(p => p !== 'GENERAL'), val]
+    );
+  };
 
   const handleSaveEdit = async () => {
     if (!editingCourse) return;
@@ -40,12 +62,14 @@ export default function AdminScreen() {
     const metaTag = `L${editingCourse.level || '100'}_S${editingCourse.semester || '1'}`;
 
     // Try full update (requires programme/level/semester columns to exist in DB)
+    const legacyProgramme = editProgrammes.length === 1 ? editProgrammes[0] : (editProgrammes[0] || editingCourse.programme || '');
     const { error } = await supabase
       .from('courses')
       .update({
         name: editingCourse.name,
         meta_tag: metaTag,
-        programme: editingCourse.programme,
+        programme: legacyProgramme,
+        programmes: editProgrammes,
         level: editingCourse.level,
         semester: editingCourse.semester,
       })
@@ -168,7 +192,8 @@ export default function AdminScreen() {
           name,
           meta_tag: metaTag,
           storage_path: storageData.path,
-          programme: programme,
+          programme: programmes.length === 1 ? programmes[0] : programmes.join(','), // legacy compat
+          programmes: programmes,   // new array column
           file_type: 'PDF',
           file_id: Math.random().toString(36).substring(2, 15)
         }]);
@@ -177,7 +202,7 @@ export default function AdminScreen() {
 
       setUploadStatus({ type: 'success', message: 'Course uploaded and snipered!' });
       setName('');
-      setProgramme('');
+      setProgrammes([]);
       setFile(null);
       fetchCourses();
     } catch (error: any) {
@@ -234,22 +259,35 @@ export default function AdminScreen() {
                 <div className="space-y-6">
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Programme</label>
-                      <select 
-                        required
-                        value={programme}
-                        onChange={(e) => setProgramme(e.target.value)}
-                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all text-sm font-bold appearance-none cursor-pointer"
-                      >
-                         <option value="" disabled>Select the target programme</option>
-                         <option value="GENERAL">📚 General / All Programmes</option>
+                   <div className="space-y-2">
+                       <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">
+                         Programmes
+                         {programmes.length > 0 && <span className="ml-2 text-[var(--accent-primary)]">({programmes.includes('GENERAL') ? 'All' : programmes.length} selected)</span>}
+                       </label>
+                       <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl overflow-hidden max-h-52 overflow-y-auto">
+                         <button type="button" onClick={() => toggleProgramme('GENERAL')}
+                           className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border-color)] transition-colors ${programmes.includes('GENERAL') ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-[var(--bg-secondary)]'}`}>
+                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${programmes.includes('GENERAL') ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]' : 'border-[var(--border-color)]'}`}>
+                             {programmes.includes('GENERAL') && <span className="text-white text-[8px] font-black">✓</span>}
+                           </div>
+                           <span className="text-xs font-black text-[var(--text-primary)]">📚 General / All Programmes</span>
+                         </button>
                          {ACADEMIC_DATA.departments.map(dept => (
-                           <optgroup key={dept} label={dept}>
+                           <div key={dept}>
+                             <p className="px-4 py-1.5 text-[8px] font-black text-[var(--text-tertiary)] uppercase tracking-widest bg-[var(--bg-secondary)]/50">{dept}</p>
                              {ACADEMIC_DATA.programs.filter(p => p.dept === dept).map(p => (
-                               <option key={p.name} value={p.name}>{p.name}</option>
+                               <button key={p.name} type="button" onClick={() => toggleProgramme(p.name)}
+                                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${programmes.includes(p.name) ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-[var(--bg-secondary)]'}`}>
+                                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${programmes.includes(p.name) ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]' : 'border-[var(--border-color)]'}`}>
+                                   {programmes.includes(p.name) && <span className="text-white text-[8px] font-black">✓</span>}
+                                 </div>
+                                 <span className="text-[11px] font-bold text-[var(--text-primary)]">{p.name}</span>
+                               </button>
                              ))}
-                           </optgroup>
+                           </div>
                          ))}
-                      </select>
+                       </div>
+                    </div>
                    </div>
 
                    <div className="space-y-2">
@@ -397,12 +435,17 @@ export default function AdminScreen() {
                          </div>
                          <div className="flex items-center gap-1">
                            <button
-                             onClick={() => setEditingCourse({ 
-                               ...course,
-                               level: course.level || '100',
-                               semester: course.semester || '1',
-                               programme: course.programme || ''
-                             })}
+                             onClick={() => {
+                                const existingProgs = Array.isArray(course.programmes) && course.programmes.length > 0
+                                  ? course.programmes
+                                  : course.programme ? [course.programme] : [];
+                                setEditProgrammes(existingProgs);
+                                setEditingCourse({ 
+                                  ...course,
+                                  level: course.level || '100',
+                                  semester: course.semester || '1',
+                                });
+                              }}
                              className="p-3 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 rounded-xl transition-all"
                              title="Edit"
                            >
@@ -451,24 +494,34 @@ export default function AdminScreen() {
               </div>
 
               <div className="space-y-5">
-                {/* Programme */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Programme</label>
-                  <select
-                    value={editingCourse.programme || ''}
-                    onChange={(e) => setEditingCourse((p: any) => ({ ...p, programme: e.target.value }))}
-                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 appearance-none cursor-pointer"
-                  >
-                    <option value="">-- No Programme --</option>
-                    <option value="GENERAL">📚 General / All Programmes</option>
+                  <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">
+                    Programmes
+                    {editProgrammes.length > 0 && <span className="ml-2 text-[var(--accent-primary)]">({editProgrammes.includes('GENERAL') ? 'All' : editProgrammes.length} selected)</span>}
+                  </label>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                    <button type="button" onClick={() => toggleEditProgramme('GENERAL')}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border-color)] transition-colors ${editProgrammes.includes('GENERAL') ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-[var(--bg-primary)]'}`}>
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${editProgrammes.includes('GENERAL') ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]' : 'border-[var(--border-color)]'}`}>
+                        {editProgrammes.includes('GENERAL') && <span className="text-white text-[8px] font-black">✓</span>}
+                      </div>
+                      <span className="text-xs font-black text-[var(--text-primary)]">📚 General / All Programmes</span>
+                    </button>
                     {ACADEMIC_DATA.departments.map(dept => (
-                      <optgroup key={dept} label={dept}>
+                      <div key={dept}>
+                        <p className="px-4 py-1 text-[8px] font-black text-[var(--text-tertiary)] uppercase tracking-widest bg-[var(--bg-primary)]/60">{dept}</p>
                         {ACADEMIC_DATA.programs.filter(p => p.dept === dept).map(p => (
-                          <option key={p.name} value={p.name}>{p.name}</option>
+                          <button key={p.name} type="button" onClick={() => toggleEditProgramme(p.name)}
+                            className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${editProgrammes.includes(p.name) ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-[var(--bg-primary)]'}`}>
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${editProgrammes.includes(p.name) ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)]' : 'border-[var(--border-color)]'}`}>
+                              {editProgrammes.includes(p.name) && <span className="text-white text-[8px] font-black">✓</span>}
+                            </div>
+                            <span className="text-[11px] font-bold text-[var(--text-primary)]">{p.name}</span>
+                          </button>
                         ))}
-                      </optgroup>
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Name */}
