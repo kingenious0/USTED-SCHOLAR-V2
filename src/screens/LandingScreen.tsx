@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { PlayCircle, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useApp } from '../context/AppContext';
 
 export default function LandingScreen() {
+  const { userState } = useApp();
   return (
     <div className="relative min-h-screen pt-16 flex items-center justify-center overflow-hidden bg-[var(--bg-primary)] transition-colors duration-300">
       {/* Decorative Glows */}
@@ -48,7 +50,7 @@ export default function LandingScreen() {
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Link 
-            to="/dashboard"
+            to={userState.hasCompletedOnboarding ? "/library" : "/onboarding"}
             className="px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-lg hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/20 flex items-center justify-center gap-2"
           >
             Get Started

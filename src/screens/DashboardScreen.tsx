@@ -28,13 +28,14 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     async function fetchCourses() {
-      // Order by created_at and filter out the duplicate/legacy L200_S2 entry
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .neq('meta_tag', 'L200_S2') // Exclude the legacy duplicate
-        .order('created_at', { ascending: false })
-        .limit(8);
+      let query = supabase.from('courses').select('*').neq('meta_tag', 'L200_S2');
+      
+      if (userState.programme) {
+        // Fetch courses that match their specific programme, OR are tagged as GENERAL, OR have no programme tagged yet (legacy)
+        query = query.or(`programme.eq."${userState.programme}",programme.eq.GENERAL,programme.is.null`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(12);
       if (!error && data) setCourses(data);
       setLoading(false);
     }
@@ -124,9 +125,11 @@ export default function DashboardScreen() {
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
              <TrendingUp className="w-12 h-12 text-[var(--accent-primary)]" />
           </div>
-          <div className="label">Current GPA</div>
-          <div className="value">3.85</div>
-          <div className="text-[var(--accent-secondary)] trend">+0.12 this semester</div>
+          <div className="label">Academic Path</div>
+          <div className="value truncate text-2xl" title={userState.programme || 'Not Set'}>
+             {userState.programme ? userState.programme.replace('B.Sc. ', '').replace('B.Ed. ', '').replace('2-year Diploma in ', '') : 'Setup Needed'}
+          </div>
+          <div className="text-[var(--accent-secondary)] trend">Level {userState.level || 'Unknown'}</div>
         </div>
         <div className="stat-card group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">

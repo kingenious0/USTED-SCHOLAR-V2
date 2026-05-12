@@ -8,9 +8,8 @@ export default function BottomNavBar({ className = "" }: { className?: string })
   const currentPath = location.pathname;
 
   const navItems = [
-    { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: Bookmark, label: 'Library', path: '/library' },
-    { icon: Zap, label: 'Tutor', path: '/hub' },
+    { icon: Home, label: 'Home', path: '/library' },
+    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (

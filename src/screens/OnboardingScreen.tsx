@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, ChevronRight, GraduationCap, Code2, Database, ShieldAlert, Cpu, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail } from 'lucide-react';
+import { ACADEMIC_DATA } from '../lib/academicData';
+import { useNavigate } from 'react-router-dom';
 
 export default function OnboardingScreen() {
-  const { setScreen, setUserState } = useApp();
+  const { setUserState } = useApp();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  
   const [selections, setSelections] = useState({
     programme: '',
     level: '',
     semester: ''
   });
-
-  const programmes = [
-    { name: 'Computer Science', icon: Code2, desc: 'Core Software Engineering' },
-    { name: 'Information Tech', icon: Cpu, desc: 'Network & Systems' },
-    { name: 'Data Analytics', icon: Database, desc: 'Intelligence & Big Data' },
-    { name: 'Cyber Security', icon: ShieldAlert, desc: 'Digital Defense Systems' },
-  ];
 
   const levels = [
     { val: '100', label: 'Freshman' },
@@ -33,7 +33,7 @@ export default function OnboardingScreen() {
       level: selections.level as any,
       semester: selections.semester as any
     });
-    setScreen('dashboard');
+    navigate('/library');
   };
 
   return (
@@ -56,38 +56,36 @@ export default function OnboardingScreen() {
                   <p className="text-[var(--text-tertiary)]">Tell us your Programme of Study to calibrate your AI workspace.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                  {programmes.map((p) => (
-                    <button
-                      key={p.name}
-                      onClick={() => setSelections(prev => ({ ...prev, programme: p.name }))}
-                      className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
-                        selections.programme === p.name 
-                          ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5 shadow-[0_0_15px_rgba(46,91,255,0.2)]' 
-                          : 'border-[var(--border-color)] bg-[var(--bg-secondary)]/60'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        selections.programme === p.name ? 'bg-[var(--accent-primary)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'
-                      }`}>
-                        <p.icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <div className={`font-bold font-sans ${selections.programme === p.name ? 'text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'}`}>
-                          {p.name}
-                        </div>
-                        <div className="text-xs text-zinc-500">{p.desc}</div>
-                      </div>
-                      {selections.programme === p.name && (
-                        <CheckCircle2 className="w-5 h-5 text-[var(--accent-primary)] fill-[var(--accent-primary)]/10" />
-                      )}
-                    </button>
-                  ))}
+                <div className="mb-10">
+                  <select
+                    value={selections.programme}
+                    onChange={(e) => setSelections(prev => ({ ...prev, programme: e.target.value }))}
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl py-5 px-6 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all text-sm font-bold appearance-none cursor-pointer custom-scrollbar text-[var(--text-primary)]"
+                    style={{ height: '70px' }}
+                  >
+                    <option value="" disabled>Choose your specific programme...</option>
+                    {ACADEMIC_DATA.departments.map(dept => (
+                      <optgroup key={dept} label={dept} className="bg-[var(--bg-primary)] text-[var(--text-secondary)] font-black text-xs uppercase tracking-widest mt-4">
+                        {ACADEMIC_DATA.programs.filter(p => p.dept === dept).map(p => (
+                          <option key={p.name} value={p.name} className="text-[var(--text-primary)] font-medium text-sm normal-case py-2">
+                            {p.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
 
                 <button
                   disabled={!selections.programme}
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    const selectedProgramData = ACADEMIC_DATA.programs.find(p => p.name === selections.programme);
+                    if (selectedProgramData?.isReady) {
+                      setStep(2);
+                    } else {
+                      setShowWaitlist(true);
+                    }
+                  }}
                   className="w-full py-5 bg-electric-blue text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
                 >
                   Confirm Path
@@ -179,6 +177,67 @@ export default function OnboardingScreen() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Waitlist Modal */}
+        <AnimatePresence>
+          {showWaitlist && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="w-full max-w-md bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-[2rem] p-8 shadow-2xl relative overflow-hidden"
+              >
+                <button 
+                  onClick={() => { setShowWaitlist(false); setWaitlistSuccess(false); }}
+                  className="absolute top-6 right-6 p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent-secondary)]/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                
+                <div className="w-12 h-12 bg-[var(--accent-secondary)]/10 rounded-2xl flex items-center justify-center mb-6 border border-[var(--accent-secondary)]/20">
+                  <Mail className="w-6 h-6 text-[var(--accent-secondary)]" />
+                </div>
+
+                <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">We're coming soon!</h3>
+                <p className="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">
+                  Scholar AI is currently training neural models specifically for <strong className="text-[var(--accent-secondary)]">{selections.programme}</strong>. Enter your email to get VIP early access when we launch for your department!
+                </p>
+
+                {waitlistSuccess ? (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <p className="text-emerald-500 text-sm font-bold">You're on the VIP list!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <input 
+                      type="email" 
+                      placeholder="Enter your student email..."
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-4 px-5 focus:outline-none focus:ring-2 focus:ring-[var(--accent-secondary)]/30 text-sm"
+                    />
+                    <button 
+                      onClick={() => setWaitlistSuccess(true)}
+                      disabled={!waitlistEmail.includes('@')}
+                      className="w-full py-4 bg-[var(--accent-secondary)] text-white rounded-xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[var(--accent-secondary)]/20 disabled:opacity-50 disabled:grayscale"
+                    >
+                      Join Waitlist
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
     </div>
   );
 }

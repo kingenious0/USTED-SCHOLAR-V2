@@ -10,11 +10,8 @@ export default function SideNavBar({ className = "" }: { className?: string }) {
   const [logoClicks, setLogoClicks] = useState(0);
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard', color: 'text-blue-500' },
-    { icon: Bookmark, label: 'Library', path: '/library', color: 'text-indigo-500' },
-    { icon: Zap, label: 'AI Tutor', path: '/hub', color: 'text-amber-500' },
-    { icon: Brain, label: 'Flashcards', path: '/flashcards', color: 'text-indigo-600' },
-    { icon: LayoutGrid, label: 'Quizzes', path: '/quiz', color: 'text-emerald-500' },
+    { icon: Home, label: 'Home', path: '/library', color: 'text-blue-500' },
+    { icon: User, label: 'Profile', path: '/profile', color: 'text-rose-500' },
   ];
 
   const handleLogoClick = () => {

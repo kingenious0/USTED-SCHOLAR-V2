@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 
 type Level = '100' | '200' | '300' | '400';
 type Semester = '1' | '2';
-type Programme = 'Computer Science' | 'Information Tech' | 'Data Analytics' | 'Cyber Security';
+type Programme = string;
 
 interface UserState {
   hasCompletedOnboarding: boolean;

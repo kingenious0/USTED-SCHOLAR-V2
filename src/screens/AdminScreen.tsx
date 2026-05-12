@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Database, Plus, Trash2, ArrowLeft, Zap, Sparkles } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Database, Plus, Trash2, ArrowLeft, Zap, Sparkles, Pencil, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as pdfjs from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
+import { ACADEMIC_DATA } from '../lib/academicData';
 
 // Configure PDF.js Worker (Vite-compatible local worker)
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -23,7 +24,56 @@ export default function AdminScreen() {
   const [name, setName] = useState('');
   const [level, setLevel] = useState('100');
   const [semester, setSemester] = useState('1');
+  const [programme, setProgramme] = useState('');
   const [file, setFile] = useState<File | null>(null);
+
+  // Edit Modal State
+  const [editingCourse, setEditingCourse] = useState<any | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const handleSaveEdit = async () => {
+    if (!editingCourse) return;
+    setEditSaving(true);
+    setEditError(null);
+    const metaTag = `L${editingCourse.level || '100'}_S${editingCourse.semester || '1'}`;
+
+    // Try full update (requires programme/level/semester columns to exist in DB)
+    const { error } = await supabase
+      .from('courses')
+      .update({
+        name: editingCourse.name,
+        meta_tag: metaTag,
+        programme: editingCourse.programme,
+        level: editingCourse.level,
+        semester: editingCourse.semester,
+      })
+      .eq('id', editingCourse.id);
+
+    if (error) {
+      // Fallback: update only name + meta_tag which always exist
+      const { error: fallbackError } = await supabase
+        .from('courses')
+        .update({ name: editingCourse.name, meta_tag: metaTag })
+        .eq('id', editingCourse.id);
+
+      if (fallbackError) {
+        setEditError(fallbackError.message);
+        setEditSaving(false);
+        return;
+      }
+      // Fallback succeeded — warn about missing columns
+      setEditError('⚠ Name saved. To save Programme/Level, run the ALTER TABLE SQL in Supabase first.');
+      setEditSaving(false);
+      fetchCourses();
+      return;
+    }
+
+    setEditSaving(false);
+    setEditingCourse(null);
+    fetchCourses();
+  };
 
   useEffect(() => {
     fetchCourses();
@@ -118,6 +168,7 @@ export default function AdminScreen() {
           name,
           meta_tag: metaTag,
           storage_path: storageData.path,
+          programme: programme,
           file_type: 'PDF',
           file_id: Math.random().toString(36).substring(2, 15)
         }]);
@@ -126,6 +177,7 @@ export default function AdminScreen() {
 
       setUploadStatus({ type: 'success', message: 'Course uploaded and snipered!' });
       setName('');
+      setProgramme('');
       setFile(null);
       fetchCourses();
     } catch (error: any) {
@@ -180,6 +232,26 @@ export default function AdminScreen() {
                 </h2>
 
                 <div className="space-y-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Programme</label>
+                      <select 
+                        required
+                        value={programme}
+                        onChange={(e) => setProgramme(e.target.value)}
+                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all text-sm font-bold appearance-none cursor-pointer"
+                      >
+                         <option value="" disabled>Select the target programme</option>
+                         <option value="GENERAL">📚 General / All Programmes</option>
+                         {ACADEMIC_DATA.departments.map(dept => (
+                           <optgroup key={dept} label={dept}>
+                             {ACADEMIC_DATA.programs.filter(p => p.dept === dept).map(p => (
+                               <option key={p.name} value={p.name}>{p.name}</option>
+                             ))}
+                           </optgroup>
+                         ))}
+                      </select>
+                   </div>
+
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Course Name</label>
                       <input 
@@ -240,7 +312,7 @@ export default function AdminScreen() {
 
                    <button 
                      type="submit"
-                     disabled={loading || !file || !name}
+                     disabled={loading || !file || !name || !programme}
                      className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-5 font-black uppercase tracking-widest text-xs shadow-xl shadow-[var(--accent-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale flex flex-col items-center justify-center gap-1"
                    >
                       {loading ? (
@@ -306,15 +378,44 @@ export default function AdminScreen() {
                             </div>
                             <div>
                                <h4 className="font-black text-[var(--text-primary)] uppercase tracking-tight text-sm mb-0.5">{course.name}</h4>
-                               <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-widest">{course.file_type || 'PDF'} • {course.storage_path?.split('/').pop()}</p>
+                               <div className="flex items-center gap-2 flex-wrap mt-1">
+                                 <span className="text-[9px] font-black text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                                   {course.meta_tag}
+                                 </span>
+                                 {course.programme && (
+                                   <span className="text-[9px] font-black text-[var(--accent-secondary)] bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                                     {course.programme === 'GENERAL' ? 'All Programmes' : course.programme.replace('B.Sc. ', '').replace('B.Ed. ', '')}
+                                   </span>
+                                 )}
+                                 {!course.programme && (
+                                   <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                                     ⚠ No Programme Tagged
+                                   </span>
+                                 )}
+                               </div>
                             </div>
                          </div>
-                         <button 
-                           onClick={() => deleteCourse(course.id, course.storage_path)}
-                           className="p-3 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
-                         >
-                            <Trash2 className="w-5 h-5" />
-                         </button>
+                         <div className="flex items-center gap-1">
+                           <button
+                             onClick={() => setEditingCourse({ 
+                               ...course,
+                               level: course.level || '100',
+                               semester: course.semester || '1',
+                               programme: course.programme || ''
+                             })}
+                             className="p-3 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 rounded-xl transition-all"
+                             title="Edit"
+                           >
+                             <Pencil className="w-4 h-4" />
+                           </button>
+                           <button 
+                             onClick={() => deleteCourse(course.id, course.storage_path)}
+                             className="p-3 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
+                             title="Delete"
+                           >
+                              <Trash2 className="w-4 h-4" />
+                           </button>
+                         </div>
                       </div>
                    ))}
                 </div>
@@ -322,6 +423,119 @@ export default function AdminScreen() {
           </section>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editingCourse && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={(e) => e.target === e.currentTarget && setEditingCourse(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 20 }}
+              className="w-full max-w-lg bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-[2rem] p-8 shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-widest mb-1">Edit Course Metadata</p>
+                  <h2 className="text-xl font-black text-[var(--text-primary)]">Update Details</h2>
+                </div>
+                <button onClick={() => setEditingCourse(null)} className="p-2 hover:bg-[var(--bg-secondary)] rounded-xl transition-colors">
+                  <X className="w-5 h-5 text-[var(--text-tertiary)]" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {/* Programme */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Programme</label>
+                  <select
+                    value={editingCourse.programme || ''}
+                    onChange={(e) => setEditingCourse((p: any) => ({ ...p, programme: e.target.value }))}
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 appearance-none cursor-pointer"
+                  >
+                    <option value="">-- No Programme --</option>
+                    <option value="GENERAL">📚 General / All Programmes</option>
+                    {ACADEMIC_DATA.departments.map(dept => (
+                      <optgroup key={dept} label={dept}>
+                        {ACADEMIC_DATA.programs.filter(p => p.dept === dept).map(p => (
+                          <option key={p.name} value={p.name}>{p.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Name */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Course Name</label>
+                  <input
+                    type="text"
+                    value={editingCourse.name}
+                    onChange={(e) => setEditingCourse((p: any) => ({ ...p, name: e.target.value }))}
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20"
+                  />
+                </div>
+
+                {/* Level & Semester */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Level</label>
+                    <select
+                      value={editingCourse.level || '100'}
+                      onChange={(e) => setEditingCourse((p: any) => ({ ...p, level: e.target.value }))}
+                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 appearance-none cursor-pointer"
+                    >
+                      <option value="100">L100</option>
+                      <option value="200">L200</option>
+                      <option value="300">L300</option>
+                      <option value="400">L400</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Semester</label>
+                    <select
+                      value={editingCourse.semester || '1'}
+                      onChange={(e) => setEditingCourse((p: any) => ({ ...p, semester: e.target.value }))}
+                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 appearance-none cursor-pointer"
+                    >
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {editError && (
+                <div className="mt-5 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <p className="text-amber-500 text-xs font-bold leading-relaxed">{editError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  onClick={() => { setEditingCourse(null); setEditError(null); }}
+                  className="flex-1 py-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[var(--bg-tertiary)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={editSaving}
+                  className="flex-1 py-4 bg-[var(--accent-primary)] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-[var(--accent-primary)]/20 disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {editSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : 'Save Changes'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

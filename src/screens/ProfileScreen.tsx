@@ -1,9 +1,27 @@
 import { useApp } from '../context/AppContext';
 import { Settings, Shield, Bell, HelpCircle, ChevronRight, User, GraduationCap, Award, Palette, LogOut, Zap, Flame } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
 
 export default function ProfileScreen() {
-  const { userState, setUserState, setScreen } = useApp();
+  const { userState, setUserState } = useApp();
+  const navigate = useNavigate();
+  const [secretTaps, setSecretTaps] = useState(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVersionTap = () => {
+    const next = secretTaps + 1;
+    setSecretTaps(next);
+    // Reset tap count after 3 seconds of inactivity
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => setSecretTaps(0), 3000);
+    if (next >= 5) {
+      clearTimeout(tapTimer.current!);
+      setSecretTaps(0);
+      navigate('/admin');
+    }
+  };
 
   const settingsGroups = [
     {
@@ -60,7 +78,7 @@ export default function ProfileScreen() {
       {/* Stats Grid */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
          {[
-           { label: 'Cumulative GPA', val: '4.82', change: '+0.12' },
+           { label: 'Academic Path', val: userState.programme ? userState.programme.replace('B.Sc. ', '').replace('B.Ed. ', '').replace('2-year Diploma in ', '').substring(0, 15) + (userState.programme.length > 15 ? '...' : '') : 'Not Set', change: 'L' + (userState.level || 'Unknown') },
            { label: 'Modules Ready', val: '12', change: 'On Track' },
            { label: 'Global Rank', val: 'Top 3%', change: 'Faculty' },
            { label: 'Scholar XP', val: '14,200', change: '+450' }
@@ -103,13 +121,40 @@ export default function ProfileScreen() {
 
         <div className="pt-6">
            <button 
-            onClick={() => setScreen('landing')}
+            onClick={() => {
+              setUserState({ hasCompletedOnboarding: false, programme: undefined, level: undefined, semester: undefined });
+              navigate('/');
+            }}
             className="w-full flex items-center justify-center gap-3 p-5 rounded-premium bg-red-500/5 border border-red-500/10 text-red-500 font-bold hover:bg-red-500/10 transition-all active:scale-95"
            >
              <LogOut className="w-5 h-5" />
-             Log Out Session
+             Log Out & Reset Session
            </button>
-           <p className="text-center mt-6 text-[10px] font-bold text-zinc-700 uppercase tracking-widest">USTED Scholar v1.0.4 • Alpha Environment</p>
+           <div className="text-center mt-6" onClick={handleVersionTap}>
+             <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest select-none cursor-default">
+               USTED Scholar v1.0.4 • Alpha Environment
+             </p>
+             {/* Secret tap progress — only visible after 2+ taps */}
+             <AnimatePresence>
+               {secretTaps >= 2 && (
+                 <motion.div
+                   initial={{ opacity: 0, y: 4 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0 }}
+                   className="flex justify-center gap-1 mt-2"
+                 >
+                   {[1,2,3,4,5].map(i => (
+                     <div
+                       key={i}
+                       className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                         i <= secretTaps ? 'bg-[var(--accent-primary)]' : 'bg-zinc-700'
+                       }`}
+                     />
+                   ))}
+                 </motion.div>
+               )}
+             </AnimatePresence>
+           </div>
         </div>
       </div>
     </div>
