@@ -4,13 +4,16 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, Trash2 } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 
 export default function HubScreen() {
   const { selectedFile } = useApp();
-  const [messages, setMessages] = useState<{role: string, text: string, imageUrl?: string|null}[]>([]);
+  const [messages, setMessages] = useState<{role: string, text: string, imageUrl?: string|null, id?: number}[]>([]);
+  const [threads, setThreads] = useState<{id: string, title: string}[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [input, setInput] = useState('');
   const [synthesis, setSynthesis] = useState('');
   const [activeTab, setActiveTab] = useState<'synthesis' | 'chat'>('synthesis');
@@ -57,36 +60,99 @@ export default function HubScreen() {
     }
   };
 
+  // 1. Load threads for the course
   useEffect(() => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
     if (targetId) {
-      const saved = localStorage.getItem(`chat_${targetId}`);
-      if (saved) {
-        setMessages(JSON.parse(saved));
+      const savedThreads = localStorage.getItem(`threads_${targetId}`);
+      let currentThreads = savedThreads ? JSON.parse(savedThreads) : [];
+      
+      if (currentThreads.length === 0) {
+        const newId = Date.now().toString();
+        currentThreads = [{ id: newId, title: 'Session 1' }];
+        localStorage.setItem(`threads_${targetId}`, JSON.stringify(currentThreads));
+      }
+      
+      setThreads(currentThreads);
+      if (!activeThreadId || !currentThreads.find((t: any) => t.id === activeThreadId)) {
+        setActiveThreadId(currentThreads[currentThreads.length - 1].id);
+      }
+    }
+  }, [selectedFile]);
+
+  // 2. Load messages when thread changes
+  useEffect(() => {
+    const targetId = selectedFile?.file_id || selectedFile?.id;
+    if (targetId && activeThreadId) {
+      const savedMsgs = localStorage.getItem(`chat_${targetId}_${activeThreadId}`);
+      if (savedMsgs) {
+        setMessages(JSON.parse(savedMsgs));
       } else {
         setMessages([
           { role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }
         ]);
       }
     }
-  }, [selectedFile]);
+  }, [activeThreadId, selectedFile]);
 
+  // 3. Save messages and auto-name the thread
   useEffect(() => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
-    if (targetId && messages.length > 0) {
-      localStorage.setItem(`chat_${targetId}`, JSON.stringify(messages));
+    if (targetId && activeThreadId && messages.length > 0) {
+      localStorage.setItem(`chat_${targetId}_${activeThreadId}`, JSON.stringify(messages));
+      
+      const currentThread = threads.find(t => t.id === activeThreadId);
+      if (currentThread && currentThread.title.startsWith('Session')) {
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        if (firstUserMsg && firstUserMsg.text) {
+          const newTitle = firstUserMsg.text.slice(0, 20) + (firstUserMsg.text.length > 20 ? '...' : '');
+          setThreads(prev => {
+            const newThreads = prev.map(t => t.id === activeThreadId ? { ...t, title: newTitle } : t);
+            localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
+            return newThreads;
+          });
+        }
+      }
     }
-  }, [messages, selectedFile]);
+  }, [messages, activeThreadId, selectedFile]);
 
-  const clearChat = () => {
-    if (window.confirm("Are you sure you want to clear this chat history?")) {
-      const targetId = selectedFile?.file_id || selectedFile?.id;
-      if (targetId) localStorage.removeItem(`chat_${targetId}`);
-      setMessages([
-        { role: 'ai', text: `Chat cleared! What would you like to study next for ${selectedFile?.name || 'this course'}?` }
-      ]);
+  const startNewChat = () => {
+    const targetId = selectedFile?.file_id || selectedFile?.id;
+    if (targetId) {
+      const newId = Date.now().toString();
+      const newTitle = `Session ${threads.length + 1}`;
+      const newThreads = [...threads, { id: newId, title: newTitle }];
+      setThreads(newThreads);
+      localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
+      setActiveThreadId(newId);
     }
   };
+
+  const deleteThreadById = (id: string) => {
+    if (window.confirm("Delete this session permanently?")) {
+      const targetId = selectedFile?.file_id || selectedFile?.id;
+      if (targetId) {
+        localStorage.removeItem(`chat_${targetId}_${id}`);
+        const newThreads = threads.filter(t => t.id !== id);
+        
+        if (newThreads.length === 0) {
+          const newId = Date.now().toString();
+          const initialThread = [{ id: newId, title: 'Session 1' }];
+          setThreads(initialThread);
+          localStorage.setItem(`threads_${targetId}`, JSON.stringify(initialThread));
+          setActiveThreadId(newId);
+        } else {
+          setThreads(newThreads);
+          localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
+          if (activeThreadId === id) {
+            setActiveThreadId(newThreads[newThreads.length - 1].id);
+          }
+        }
+      }
+    }
+  };
+
+  const deleteThread = () => deleteThreadById(activeThreadId);
 
   useEffect(() => {
     async function fetchSynthesis() {
@@ -153,7 +219,7 @@ export default function HubScreen() {
   return (
     <div className="h-[100dvh] lg:h-screen flex flex-col lg:flex-row bg-[var(--bg-primary)] overflow-hidden relative transition-colors duration-300">
       {/* Left: PDF/Document Viewer */}
-      <section className={`${activeTab === 'synthesis' ? 'flex-1' : 'flex-none'} flex flex-col min-h-0 border-r border-[var(--border-color)] relative transition-all duration-300 pb-20 lg:pb-0`}>
+      <section className={`${activeTab === 'synthesis' ? 'flex-1' : 'flex-none'} flex flex-col min-h-0 border-r border-[var(--border-color)] relative transition-all duration-300`}>
         {/* Abstract Background Glow */}
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-electric-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
@@ -174,6 +240,14 @@ export default function HubScreen() {
               <div className="hidden md:flex items-center gap-1.5 px-3 py-1 bg-[var(--bg-secondary)] rounded-full border border-[var(--border-color)]">
                  <span className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Confidence: 98%</span>
               </div>
+              {activeTab === 'chat' && (
+                <button 
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors rounded-lg lg:hidden bg-[var(--bg-secondary)] border border-[var(--border-color)]"
+                >
+                  <Menu className="w-4 h-4" />
+                </button>
+              )}
               <Link to="/dashboard" className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-color)]">
                 <X className="w-4 h-4" />
               </Link>
@@ -248,7 +322,7 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className={`w-full lg:w-[400px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-20 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
+      <aside className={`w-full lg:w-[400px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
           <header className="p-6 border-b border-[var(--border-color)] hidden lg:flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center shadow-lg shadow-[var(--accent-primary)]/20">
@@ -262,17 +336,99 @@ export default function HubScreen() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button onClick={clearChat} className="text-[var(--text-tertiary)] hover:text-red-500 transition-colors p-1" title="Clear History">
+            <div className="flex items-center gap-2">
+              <select 
+                value={activeThreadId}
+                onChange={(e) => setActiveThreadId(e.target.value)}
+                className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider max-w-[120px] truncate outline-none focus:ring-1 focus:ring-[var(--accent-primary)] cursor-pointer"
+              >
+                {threads.map(t => (
+                  <option key={t.id} value={t.id}>{t.title}</option>
+                ))}
+              </select>
+              <button onClick={deleteThread} className="text-[var(--text-tertiary)] hover:bg-red-500/10 hover:text-red-500 transition-colors p-1.5 rounded-lg" title="Delete Session">
                 <Trash2 className="w-4 h-4" />
               </button>
-              <Link className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" to="/dashboard">
+              <button onClick={startNewChat} className="bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)] hover:text-white transition-colors p-1.5 rounded-lg" title="New Session">
+                <MessageSquarePlus className="w-4 h-4" />
+              </button>
+              <Link className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] p-1 ml-2" to="/dashboard">
                 <X className="w-5 h-5" />
               </Link>
             </div>
           </header>
 
-         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 custom-scrollbar">
+          {/* Mobile Chat Controls Drawer */}
+          <AnimatePresence>
+            {isMobileMenuOpen && activeTab === 'chat' && (
+              <motion.div 
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+                className="fixed inset-y-0 left-0 w-[85%] max-w-[320px] bg-[var(--bg-secondary)] border-r border-[var(--border-color)] z-[100] flex flex-col shadow-2xl lg:hidden"
+              >
+                <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-primary)] pt-12">
+                  <h4 className="font-extrabold text-[var(--text-primary)] text-xl">Chat History</h4>
+                  <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-4 border-b border-[var(--border-color)]">
+                  <button 
+                    onClick={() => { startNewChat(); setIsMobileMenuOpen(false); }} 
+                    className="w-full py-4 bg-[var(--accent-primary)] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent-primary)]/20 active:scale-95 transition-all"
+                  >
+                    <MessageSquarePlus className="w-5 h-5" />
+                    New Session
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {threads.map(t => (
+                    <div 
+                      key={t.id} 
+                      className={`w-full text-left p-4 rounded-2xl border flex items-center justify-between group transition-all ${
+                        activeThreadId === t.id 
+                          ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30 text-[var(--accent-primary)]' 
+                          : 'bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--text-tertiary)]'
+                      }`}
+                    >
+                      <button 
+                        onClick={() => { setActiveThreadId(t.id); setIsMobileMenuOpen(false); }}
+                        className="flex-1 font-bold text-sm truncate pr-2 text-left"
+                      >
+                        {t.title}
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteThreadById(t.id); }}
+                        className="p-2 text-[var(--text-tertiary)] hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Overlay to dismiss drawer */}
+          <AnimatePresence>
+             {isMobileMenuOpen && activeTab === 'chat' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="fixed inset-0 bg-black/60 z-[90] lg:hidden backdrop-blur-sm cursor-pointer"
+                />
+             )}
+          </AnimatePresence>
+
+         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar relative z-10">
             <AnimatePresence>
               {messages.map((m, i) => (
                 <motion.div 
