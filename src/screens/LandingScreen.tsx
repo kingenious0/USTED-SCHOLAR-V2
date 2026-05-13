@@ -47,7 +47,7 @@ export default function LandingScreen() {
           transition={{ duration: 0.5, delay: 0.08 }}
           className="mb-4"
         >
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none text-[var(--text-primary)]">
+          <h1 className="text-[11vw] sm:text-6xl md:text-8xl font-black tracking-tighter leading-none text-[var(--text-primary)]">
             USTED<span className="text-transparent bg-clip-text bg-gradient-to-br from-[#2E5BFF] to-[#FFCC22]">Scholar</span>
           </h1>
         </motion.div>
