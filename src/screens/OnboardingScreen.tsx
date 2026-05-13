@@ -7,18 +7,19 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function OnboardingScreen() {
-  const { setUserState } = useApp();
+  const { userState, setUserState } = useApp();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [nameInput, setNameInput] = useState(userState.name || '');
   
   const [selections, setSelections] = useState({
-    programme: '',
-    level: '',
-    semester: ''
+    programme: userState.programme || '',
+    level: userState.level || '',
+    semester: userState.semester || ''
   });
 
   const levels = [
@@ -31,6 +32,8 @@ export default function OnboardingScreen() {
   const handleComplete = () => {
     setUserState({
       hasCompletedOnboarding: true,
+      isLoggedIn: true,
+      name: nameInput.trim(),
       programme: selections.programme as any,
       level: selections.level as any,
       semester: selections.semester as any
@@ -80,6 +83,43 @@ export default function OnboardingScreen() {
 
         <div className="w-full max-w-2xl relative z-10">
           <AnimatePresence mode="wait">
+            {/* STEP 0 — Name */}
+            {step === 0 && (
+              <motion.div
+                key="step0"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <div className="mb-10 text-center md:text-left">
+                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-3">Step 1 of 3</p>
+                  <h2 className="text-4xl font-black text-[var(--text-primary)] mb-3 leading-tight">What's your name?</h2>
+                  <p className="text-[var(--text-tertiary)]">We'll personalise your Scholar workspace just for you.</p>
+                </div>
+
+                <div className="mb-10">
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && nameInput.trim() && setStep(1)}
+                    placeholder="e.g. Kwame Mensah"
+                    autoFocus
+                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl py-5 px-6 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all text-lg font-bold text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]/40"
+                  />
+                </div>
+
+                <button
+                  disabled={!nameInput.trim()}
+                  onClick={() => setStep(1)}
+                  className="w-full py-5 bg-electric-blue text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
+                >
+                  Continue <ChevronRight className="w-5 h-5" />
+                </button>
+              </motion.div>
+            )}
+
+            {/* STEP 1 — Programme */}
             {step === 1 && (
               <motion.div
                 key="step1"
@@ -88,7 +128,10 @@ export default function OnboardingScreen() {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <div className="mb-10 text-center md:text-left">
-                  <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Select Your Path</h2>
+                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-3">Step 2 of 3</p>
+                  <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+                    {nameInput ? `Hey ${nameInput.split(' ')[0]}, select your path` : 'Select Your Path'}
+                  </h2>
                   <p className="text-[var(--text-tertiary)]">Tell us your Programme of Study to calibrate your AI workspace.</p>
                 </div>
 
@@ -135,7 +178,7 @@ export default function OnboardingScreen() {
               >
                 <div className="mb-10">
                   <div className="flex justify-between items-end mb-4">
-                     <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 2 of 2</p>
+                     <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 3 of 3</p>
                      <p className="text-electric-blue font-bold">Academic Path</p>
                   </div>
                   <div className="h-1.5 w-full bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
@@ -143,7 +186,9 @@ export default function OnboardingScreen() {
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-8">Select Your Level</h2>
+                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-8">
+                  {nameInput ? `Almost there, ${nameInput.split(' ')[0]}!` : 'Select Your Level'}
+                </h2>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                   {levels.map((l) => (

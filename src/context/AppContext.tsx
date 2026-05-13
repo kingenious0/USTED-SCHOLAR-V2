@@ -6,6 +6,9 @@ type Programme = string;
 
 interface UserState {
   hasCompletedOnboarding: boolean;
+  isLoggedIn?: boolean;
+  name?: string;
+  avatarUrl?: string;
   level?: Level;
   semester?: Semester;
   programme?: Programme;

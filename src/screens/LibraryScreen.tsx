@@ -72,7 +72,9 @@ export default function LibraryScreen() {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 relative z-10">
         <div>
-          <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-1">{greeting}</p>
+          <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-1">
+            {greeting}{userState.name ? `, ${userState.name.split(' ')[0]}` : ''}
+          </p>
           <h1 className="text-4xl md:text-5xl font-black text-[var(--text-primary)] leading-none tracking-tighter uppercase mb-2">
             Scholar <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]">Library</span>
           </h1>

@@ -4,15 +4,13 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, Trash2 } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 
 export default function HubScreen() {
   const { selectedFile } = useApp();
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }
-  ]);
+  const [messages, setMessages] = useState<{role: string, text: string, imageUrl?: string|null}[]>([]);
   const [input, setInput] = useState('');
   const [synthesis, setSynthesis] = useState('');
   const [activeTab, setActiveTab] = useState<'synthesis' | 'chat'>('synthesis');
@@ -56,6 +54,37 @@ export default function HubScreen() {
           break;
         }
       }
+    }
+  };
+
+  useEffect(() => {
+    const targetId = selectedFile?.file_id || selectedFile?.id;
+    if (targetId) {
+      const saved = localStorage.getItem(`chat_${targetId}`);
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      } else {
+        setMessages([
+          { role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }
+        ]);
+      }
+    }
+  }, [selectedFile]);
+
+  useEffect(() => {
+    const targetId = selectedFile?.file_id || selectedFile?.id;
+    if (targetId && messages.length > 0) {
+      localStorage.setItem(`chat_${targetId}`, JSON.stringify(messages));
+    }
+  }, [messages, selectedFile]);
+
+  const clearChat = () => {
+    if (window.confirm("Are you sure you want to clear this chat history?")) {
+      const targetId = selectedFile?.file_id || selectedFile?.id;
+      if (targetId) localStorage.removeItem(`chat_${targetId}`);
+      setMessages([
+        { role: 'ai', text: `Chat cleared! What would you like to study next for ${selectedFile?.name || 'this course'}?` }
+      ]);
     }
   };
 
@@ -233,9 +262,14 @@ export default function HubScreen() {
                 </p>
               </div>
             </div>
-            <Link className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" to="/dashboard">
-              <X className="w-5 h-5" />
-            </Link>
+            <div className="flex items-center gap-4">
+              <button onClick={clearChat} className="text-[var(--text-tertiary)] hover:text-red-500 transition-colors p-1" title="Clear History">
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <Link className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" to="/dashboard">
+                <X className="w-5 h-5" />
+              </Link>
+            </div>
           </header>
 
          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 custom-scrollbar">

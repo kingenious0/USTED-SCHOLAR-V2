@@ -5,19 +5,19 @@ import { useApp } from '../context/AppContext';
 import { useEffect } from 'react';
 
 export default function LandingScreen() {
-  const { userState } = useApp();
+  const { userState, setUserState } = useApp();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (userState.hasCompletedOnboarding) {
+    if (userState.isLoggedIn) {
       navigate('/library', { replace: true });
     }
   }, []);
 
   const features = [
-    { icon: Brain, label: 'AI Synthesis', desc: 'Instant insights from your course materials' },
-    { icon: BookOpen, label: 'Smart Library', desc: 'All your modules, organised by programme' },
-    { icon: Zap, label: 'Quiz & Flash', desc: 'Reinforce learning with AI-generated practice' },
+    { icon: Brain, label: 'Smart Synthesis', desc: 'Instant insights from your course materials' },
+    { icon: BookOpen, label: 'Digital Library', desc: 'All your modules, organised by programme' },
+    { icon: Zap, label: 'Active Recall', desc: 'Reinforce learning with dynamic practice' },
   ];
 
   return (
@@ -37,7 +37,7 @@ export default function LandingScreen() {
           className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full border border-[#2E5BFF]/25 bg-[#2E5BFF]/6 text-[#2E5BFF] text-[10px] font-black tracking-[0.25em] uppercase"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#2E5BFF] animate-pulse" />
-          AAMUSTED · AI-Powered Learning
+          USTED · Digital Study Hub
         </motion.div>
 
         {/* Wordmark */}
@@ -59,7 +59,7 @@ export default function LandingScreen() {
           transition={{ duration: 0.5, delay: 0.16 }}
           className="text-[var(--text-tertiary)] text-base md:text-lg font-medium leading-relaxed mb-10 max-w-sm mx-auto"
         >
-          Your AI study companion for AAMUSTED. Built for the modern Ghanaian scholar.
+          The ultimate academic workspace for USTED. Built for the modern Ghanaian scholar.
         </motion.p>
 
         {/* CTA */}
@@ -67,14 +67,39 @@ export default function LandingScreen() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.24 }}
+          className="flex flex-col items-center gap-4"
         >
-          <Link
-            to="/onboarding"
-            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
-          >
-            Get Started
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          {userState.hasCompletedOnboarding && userState.name ? (
+            <>
+              <button
+                onClick={() => {
+                  setUserState({ isLoggedIn: true });
+                  navigate('/library');
+                }}
+                className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
+              >
+                Log In as {userState.name.split(' ')[0]}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => {
+                  setUserState({ hasCompletedOnboarding: false, isLoggedIn: false, name: undefined, programme: undefined, level: undefined, semester: undefined, avatarUrl: undefined });
+                  navigate('/onboarding');
+                }}
+                className="text-xs font-bold text-[var(--text-tertiary)] hover:text-[#2E5BFF] transition-colors"
+              >
+                Not you? Create new profile
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/onboarding"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
+            >
+              Get Started
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          )}
         </motion.div>
 
         {/* Feature pills */}
@@ -105,7 +130,7 @@ export default function LandingScreen() {
           transition={{ duration: 0.5, delay: 0.55 }}
           className="mt-12 text-[9px] font-bold text-[var(--text-tertiary)] uppercase tracking-[0.25em]"
         >
-          Exclusively for AAMUSTED Students & Staff
+          Exclusively made for USTED Students
         </motion.p>
 
       </div>

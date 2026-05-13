@@ -23,6 +23,30 @@ const CEREBRAS_API_KEY = import.meta.env.VITE_CEREBRAS_API_KEY;
 
 let currentKeyIndex = 0;
 
+// Anti-AI Persona & Constraints
+const ANTI_AI_PERSONA = `Act as a Senior Academic Mentor. Use a concise, high-signal, low-noise writing style.
+CRITICAL CONSTRAINTS:
+1. Strictly Avoid words like: delve, pivotal, comprehensive, transformative, multi-faceted, or underscores.
+2. Zero-Intro: DO NOT include introductory phrases or meta-talk like 'Here is a synthesis...', 'According to the document...', or 'Structure by units...'. Start directly with the first heading (e.g. '# Network Fundamentals'). No fluff, no apologies, no summaries of the synthesis process.
+3. Formatting: Use bolding for key terms only. Use short bullet points.
+4. Tone: Direct, technical, and slightly informal—like a senior student explaining a concept to a junior over coffee.
+5. Language: Use standard English, but feel free to use Ghanaian academic context where relevant (e.g., mentioning 'Mid-sem' or 'End-of-sem').`;
+
+function cleanAIText(text: string) {
+  const patterns = [
+    /^Here is a synthesis.*?\n/i,
+    /^Based on the document.*?\n/i,
+    /^This document appears to be.*?\n/i,
+    /^Here is the.*?\n/i,
+    /^Sure,.*?\n/i,
+    /^Certainly,.*?\n/i,
+    /^Okay,.*?\n/i
+  ];
+  let cleaned = text.trimStart();
+  patterns.forEach(p => cleaned = cleaned.replace(p, '').trimStart());
+  return cleaned;
+}
+
 // Helper: UUID Validation
 const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -124,8 +148,9 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   const { data: cached } = await query.maybeSingle();
 
   if (cached?.synthesis) {
-    onUpdate(cached.synthesis, 'Ready');
-    return cached.synthesis;
+    const cleanedCache = cleanAIText(cached.synthesis);
+    onUpdate(cleanedCache, 'Ready');
+    return cleanedCache;
   }
 
   let textToProcess = cached?.full_text || '';
@@ -152,8 +177,9 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
       const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
       const completion = await client.chat.completions.create({
         messages: [
-          { role: 'system', content: 'You are the USTED Scholar AI. Create a deep academic synthesis in Markdown. Focus on key definitions.' },
+          { role: 'system', content: `You are the USTED Scholar AI. ${ANTI_AI_PERSONA}` },
           { role: 'user', content: textToProcess }
+
         ],
         model: 'llama3.1-8b', // SWAPPED to user-available 8B model
         stream: true,
@@ -162,14 +188,15 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
       let text = '';
       for await (const chunk of completion) {
         text += chunk.choices[0]?.delta?.content || '';
-        onUpdate(text, 'Writing...');
+        onUpdate(cleanAIText(text), 'Writing...');
       }
 
-      let updateQuery = supabase.from('courses').update({ synthesis: text });
+      const finalCleaned = cleanAIText(text);
+      let updateQuery = supabase.from('courses').update({ synthesis: finalCleaned });
       if (isUUID(fileId)) updateQuery = updateQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
       else updateQuery = updateQuery.eq('file_id', fileId);
       await updateQuery;
-      return text;
+      return finalCleaned;
     } catch (e) {
       console.warn('Cerebras failed, falling back...');
     }
@@ -180,7 +207,10 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   for (let k = 0; k < API_KEYS.length; k++) {
     const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' }); // Use 1.5 for better Vision/OCR
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash-lite',
+        systemInstruction: `You are the USTED Scholar AI. ${ANTI_AI_PERSONA}`
+      });
       let prompt: any[] = [];
 
       if (textToProcess) {
@@ -199,14 +229,15 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
       let text = '';
       for await (const chunk of result.stream) {
         text += chunk.text();
-        onUpdate(text, 'Writing...');
+        onUpdate(cleanAIText(text), 'Writing...');
       }
 
-      let updateQuery = supabase.from('courses').update({ synthesis: text });
+      const finalCleaned = cleanAIText(text);
+      let updateQuery = supabase.from('courses').update({ synthesis: finalCleaned });
       if (isUUID(fileId)) updateQuery = updateQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
       else updateQuery = updateQuery.eq('file_id', fileId);
       await updateQuery;
-      return text;
+      return finalCleaned;
     } catch (error: any) {
       if (error.message?.includes('429')) {
         currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
@@ -231,7 +262,7 @@ export async function streamChat(fileId: string, message: string, history: any[]
       const groq = new Groq({ apiKey: GROQ_API_KEY, dangerouslyAllowBrowser: true });
       const chatCompletion = await groq.chat.completions.create({
         messages: [
-          { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}` },
+          { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${ANTI_AI_PERSONA}` },
           ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
           { role: 'user', content: message }
         ],
@@ -241,14 +272,17 @@ export async function streamChat(fileId: string, message: string, history: any[]
       let accumulated = '';
       for await (const chunk of chatCompletion) {
         accumulated += chunk.choices[0]?.delta?.content || '';
-        onUpdate(accumulated);
+        onUpdate(cleanAIText(accumulated));
       }
       return;
     } catch (e) {}
   }
 
   const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-2.5-flash-lite',
+    systemInstruction: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${ANTI_AI_PERSONA}`
+  });
   const contents: any[] = history.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
   
   const currentParts: any[] = [{ text: message }];
@@ -264,7 +298,7 @@ export async function streamChat(fileId: string, message: string, history: any[]
   let text = '';
   for await (const chunk of result.stream) {
     text += chunk.text();
-    onUpdate(text);
+    onUpdate(cleanAIText(text));
   }
 }
 
