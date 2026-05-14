@@ -24,13 +24,20 @@ const CEREBRAS_API_KEY = import.meta.env.VITE_CEREBRAS_API_KEY;
 let currentKeyIndex = 0;
 
 // Anti-AI Persona & Constraints
-const ANTI_AI_PERSONA = `Act as a Senior Academic Mentor. Use a concise, high-signal, low-noise writing style.
+const SYNTHESIS_PERSONA = `Act as a Senior Academic Mentor. Use a concise, high-signal, low-noise writing style.
 CRITICAL CONSTRAINTS:
 1. Strictly Avoid words like: delve, pivotal, comprehensive, transformative, multi-faceted, or underscores.
 2. Zero-Intro: DO NOT include introductory phrases or meta-talk like 'Here is a synthesis...', 'According to the document...', or 'Structure by units...'. Start directly with the first heading (e.g. '# Network Fundamentals'). No fluff, no apologies, no summaries of the synthesis process.
 3. Formatting: Use bolding for key terms only. Use short bullet points.
 4. Tone: Direct, technical, and slightly informal—like a senior student explaining a concept to a junior over coffee.
 5. Language: Use standard English, but feel free to use Ghanaian academic context where relevant (e.g., mentioning 'Mid-sem' or 'End-of-sem').`;
+
+const CHAT_PERSONA = `Act as a Senior Academic Mentor named USTED Scholar AI. Use a concise, high-signal, low-noise writing style.
+CRITICAL CONSTRAINTS:
+1. Tone: Direct, technical, and friendly—like a senior student explaining a concept to a junior over coffee.
+2. Language: Use standard English, but feel free to use Ghanaian academic context where relevant (e.g., mentioning 'Mid-sem' or 'End-of-sem').
+3. You are a conversational assistant. Reply directly to the user's chat messages. If they greet you, greet them back naturally. Do NOT output a full academic synthesis unless explicitly asked to summarize.
+4. Avoid generic AI fluff, apologies, or robotic phrasing. Keep answers highly relevant to the context.`;
 
 function cleanAIText(text: string) {
   const patterns = [
@@ -177,7 +184,7 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
       const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
       const completion = await client.chat.completions.create({
         messages: [
-          { role: 'system', content: `You are the USTED Scholar AI. ${ANTI_AI_PERSONA}` },
+          { role: 'system', content: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` },
           { role: 'user', content: textToProcess }
 
         ],
@@ -209,7 +216,7 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
     try {
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-2.5-flash-lite',
-        systemInstruction: `You are the USTED Scholar AI. ${ANTI_AI_PERSONA}`
+        systemInstruction: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}`
       });
       let prompt: any[] = [];
 
@@ -262,7 +269,7 @@ export async function streamChat(fileId: string, message: string, history: any[]
       const groq = new Groq({ apiKey: GROQ_API_KEY, dangerouslyAllowBrowser: true });
       const chatCompletion = await groq.chat.completions.create({
         messages: [
-          { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${ANTI_AI_PERSONA}` },
+          { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` },
           ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
           { role: 'user', content: message }
         ],
@@ -281,7 +288,7 @@ export async function streamChat(fileId: string, message: string, history: any[]
   const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
   const model = genAI.getGenerativeModel({ 
     model: 'gemini-2.5-flash-lite',
-    systemInstruction: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${ANTI_AI_PERSONA}`
+    systemInstruction: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}`
   });
   const contents: any[] = history.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
   
@@ -358,5 +365,35 @@ export async function generateFlashcards(fileId: string) {
   } catch (error) {
     console.error('Flashcard Generation Error:', error);
     throw error;
+  }
+}
+
+// Service: Generate Smart Chat Title
+export async function generateThreadTitle(userMessage: string) {
+  try {
+    // Try Cerebras first if available because it's insanely fast
+    if (CEREBRAS_API_KEY && CEREBRAS_API_KEY !== 'your_cerebras_api_key_here') {
+      const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
+      const response = await client.chat.completions.create({
+        messages: [
+          { role: 'system', content: 'You are a title generator. Generate a short, punchy 3-5 word title for the user\'s message. Do not use quotes, punctuation, or formatting.' },
+          { role: 'user', content: userMessage }
+        ],
+        model: 'llama3.1-8b', 
+      });
+      const content = response.choices[0].message.content;
+      if (content) return content.trim().replace(/['"]/g, '');
+    }
+
+    // Fallback to Gemini
+    const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+    const prompt = `Generate a very short, punchy 3-5 word title for a chat session that starts with this message:\n\n"${userMessage}"\n\nDo not use quotes or punctuation. Just output the title.`;
+    const result = await model.generateContent([{ text: prompt }]);
+    return result.response.text().trim().replace(/['"]/g, '');
+  } catch (error) {
+    console.error('Title Gen Error:', error);
+    // Silent fallback to standard truncation
+    return userMessage.slice(0, 20) + (userMessage.length > 20 ? '...' : '');
   }
 }

@@ -74,26 +74,36 @@ export default function HubScreen() {
       }
       
       setThreads(currentThreads);
-      if (!activeThreadId || !currentThreads.find((t: any) => t.id === activeThreadId)) {
-        setActiveThreadId(currentThreads[currentThreads.length - 1].id);
-      }
-    }
-  }, [selectedFile]);
-
-  // 2. Load messages when thread changes
-  useEffect(() => {
-    const targetId = selectedFile?.file_id || selectedFile?.id;
-    if (targetId && activeThreadId) {
-      const savedMsgs = localStorage.getItem(`chat_${targetId}_${activeThreadId}`);
+      
+      // Initialize active thread and load its messages
+      const initialThreadId = activeThreadId && currentThreads.find((t: any) => t.id === activeThreadId) 
+        ? activeThreadId 
+        : currentThreads[currentThreads.length - 1].id;
+        
+      setActiveThreadId(initialThreadId);
+      
+      const savedMsgs = localStorage.getItem(`chat_${targetId}_${initialThreadId}`);
       if (savedMsgs) {
         setMessages(JSON.parse(savedMsgs));
       } else {
-        setMessages([
-          { role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }
-        ]);
+        setMessages([{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }]);
       }
     }
-  }, [activeThreadId, selectedFile]);
+  }, [selectedFile]); // Only run when selectedFile changes
+
+  // Synchronous thread switching to prevent race conditions
+  const switchThread = (newId: string) => {
+    const targetId = selectedFile?.file_id || selectedFile?.id;
+    setActiveThreadId(newId);
+    if (targetId) {
+      const savedMsgs = localStorage.getItem(`chat_${targetId}_${newId}`);
+      if (savedMsgs) {
+        setMessages(JSON.parse(savedMsgs));
+      } else {
+        setMessages([{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }]);
+      }
+    }
+  };
 
   // 3. Save messages and auto-name the thread
   useEffect(() => {
@@ -104,17 +114,27 @@ export default function HubScreen() {
       const currentThread = threads.find(t => t.id === activeThreadId);
       if (currentThread && currentThread.title.startsWith('Session')) {
         const firstUserMsg = messages.find(m => m.role === 'user');
-        if (firstUserMsg && firstUserMsg.text) {
-          const newTitle = firstUserMsg.text.slice(0, 20) + (firstUserMsg.text.length > 20 ? '...' : '');
-          setThreads(prev => {
-            const newThreads = prev.map(t => t.id === activeThreadId ? { ...t, title: newTitle } : t);
-            localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
-            return newThreads;
+        // @ts-ignore - we add isGeneratingTitle dynamically to prevent loops
+        if (firstUserMsg && firstUserMsg.text && !currentThread.isGeneratingTitle) {
+          
+          // Optimistically mark as generating to prevent re-triggering
+          setThreads(prev => prev.map(t => t.id === activeThreadId ? { ...t, isGeneratingTitle: true } : t));
+          
+          import('../lib/ai').then(({ generateThreadTitle }) => {
+            generateThreadTitle(firstUserMsg.text).then(newTitle => {
+              setThreads(prev => {
+                const newThreads = prev.map(t => 
+                  t.id === activeThreadId ? { ...t, title: newTitle, isGeneratingTitle: undefined } : t
+                );
+                localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
+                return newThreads;
+              });
+            });
           });
         }
       }
     }
-  }, [messages, activeThreadId, selectedFile]);
+  }, [messages]); // ONLY depend on messages to avoid saving old messages to new thread ID
 
   const startNewChat = () => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
@@ -124,7 +144,12 @@ export default function HubScreen() {
       const newThreads = [...threads, { id: newId, title: newTitle }];
       setThreads(newThreads);
       localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
+      
+      // Update synchronously
       setActiveThreadId(newId);
+      const initialMsgs = [{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }];
+      setMessages(initialMsgs);
+      localStorage.setItem(`chat_${targetId}_${newId}`, JSON.stringify(initialMsgs));
     }
   };
 
@@ -140,12 +165,12 @@ export default function HubScreen() {
           const initialThread = [{ id: newId, title: 'Session 1' }];
           setThreads(initialThread);
           localStorage.setItem(`threads_${targetId}`, JSON.stringify(initialThread));
-          setActiveThreadId(newId);
+          switchThread(newId);
         } else {
           setThreads(newThreads);
           localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
           if (activeThreadId === id) {
-            setActiveThreadId(newThreads[newThreads.length - 1].id);
+            switchThread(newThreads[newThreads.length - 1].id);
           }
         }
       }
@@ -339,7 +364,7 @@ export default function HubScreen() {
             <div className="flex items-center gap-2">
               <select 
                 value={activeThreadId}
-                onChange={(e) => setActiveThreadId(e.target.value)}
+                onChange={(e) => switchThread(e.target.value)}
                 className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider max-w-[120px] truncate outline-none focus:ring-1 focus:ring-[var(--accent-primary)] cursor-pointer"
               >
                 {threads.map(t => (
@@ -396,7 +421,7 @@ export default function HubScreen() {
                       }`}
                     >
                       <button 
-                        onClick={() => { setActiveThreadId(t.id); setIsMobileMenuOpen(false); }}
+                        onClick={() => { switchThread(t.id); setIsMobileMenuOpen(false); }}
                         className="flex-1 font-bold text-sm truncate pr-2 text-left"
                       >
                         {t.title}

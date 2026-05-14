@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail, Loader2 } from 'lucide-react';
@@ -9,18 +9,54 @@ import { supabase } from '../lib/supabase';
 export default function OnboardingScreen() {
   const { userState, setUserState } = useApp();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1); // Start directly at step 1
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [nameInput, setNameInput] = useState(userState.name || '');
+  const [checkingProfile, setCheckingProfile] = useState(true);
   
   const [selections, setSelections] = useState({
     programme: userState.programme || '',
     level: userState.level || '',
     semester: userState.semester || ''
   });
+
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Check if they already exist in the database
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          // If no error and we got a profile, they've already onboarded!
+          if (!error && profile && profile.programme) {
+            setUserState({
+              hasCompletedOnboarding: true,
+              isLoggedIn: true,
+              name: profile.name || userState.name,
+              programme: profile.programme,
+              level: profile.level,
+              semester: profile.semester
+            });
+            navigate('/library', { replace: true });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Profile check error:", err);
+      }
+      // If we reach here, no profile found or error happened, show onboarding
+      setCheckingProfile(false);
+    };
+    
+    checkExistingProfile();
+  }, [navigate, setUserState, userState.name]);
 
   const levels = [
     { val: '100', label: 'Freshman' },
@@ -29,16 +65,36 @@ export default function OnboardingScreen() {
     { val: '400', label: 'Senior' },
   ];
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Save the profile to Supabase
+        const { error } = await supabase.from('profiles').upsert({
+          id: session.user.id,
+          name: userState.name || 'Scholar',
+          programme: selections.programme,
+          level: selections.level,
+          semester: selections.semester,
+          updated_at: new Date()
+        });
+        
+        if (error) console.error("Error saving profile to Supabase:", error);
+      }
+    } catch (err) {
+      console.error("Profile save error:", err);
+    }
+
     setUserState({
       hasCompletedOnboarding: true,
       isLoggedIn: true,
-      name: nameInput.trim(),
+      name: userState.name || 'Scholar',
       programme: selections.programme as any,
       level: selections.level as any,
       semester: selections.semester as any
     });
-    navigate('/library');
+    navigate('/library', { replace: true });
   };
 
   // Check live DB — if any courses exist for this programme, it's ready
@@ -75,6 +131,15 @@ export default function OnboardingScreen() {
     }
   };
 
+  if (checkingProfile) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 transition-colors duration-300">
+        <Loader2 className="w-10 h-10 text-[var(--accent-primary)] animate-spin mb-4" />
+        <p className="text-[var(--text-tertiary)] font-medium animate-pulse">Syncing your workspace...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
         {/* Background Gradients */}
@@ -83,41 +148,6 @@ export default function OnboardingScreen() {
 
         <div className="w-full max-w-2xl relative z-10">
           <AnimatePresence mode="wait">
-            {/* STEP 0 — Name */}
-            {step === 0 && (
-              <motion.div
-                key="step0"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <div className="mb-10 text-center md:text-left">
-                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-3">Step 1 of 3</p>
-                  <h2 className="text-4xl font-black text-[var(--text-primary)] mb-3 leading-tight">What's your name?</h2>
-                  <p className="text-[var(--text-tertiary)]">We'll personalise your Scholar workspace just for you.</p>
-                </div>
-
-                <div className="mb-10">
-                  <input
-                    type="text"
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && nameInput.trim() && setStep(1)}
-                    placeholder="e.g. Kwame Mensah"
-                    autoFocus
-                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl py-5 px-6 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all text-lg font-bold text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]/40"
-                  />
-                </div>
-
-                <button
-                  disabled={!nameInput.trim()}
-                  onClick={() => setStep(1)}
-                  className="w-full py-5 bg-electric-blue text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
-                >
-                  Continue <ChevronRight className="w-5 h-5" />
-                </button>
-              </motion.div>
-            )}
 
             {/* STEP 1 — Programme */}
             {step === 1 && (
@@ -128,9 +158,9 @@ export default function OnboardingScreen() {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <div className="mb-10 text-center md:text-left">
-                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-3">Step 2 of 3</p>
+                  <p className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.4em] mb-3">Step 1 of 2</p>
                   <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-                    {nameInput ? `Hey ${nameInput.split(' ')[0]}, select your path` : 'Select Your Path'}
+                    {userState.name ? `Hey ${userState.name.split(' ')[0]}, select your path` : 'Select Your Path'}
                   </h2>
                   <p className="text-[var(--text-tertiary)]">Tell us your Programme of Study to calibrate your AI workspace.</p>
                 </div>
@@ -178,7 +208,7 @@ export default function OnboardingScreen() {
               >
                 <div className="mb-10">
                   <div className="flex justify-between items-end mb-4">
-                     <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 3 of 3</p>
+                     <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 2 of 2</p>
                      <p className="text-electric-blue font-bold">Academic Path</p>
                   </div>
                   <div className="h-1.5 w-full bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
@@ -187,7 +217,7 @@ export default function OnboardingScreen() {
                 </div>
 
                 <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-8">
-                  {nameInput ? `Almost there, ${nameInput.split(' ')[0]}!` : 'Select Your Level'}
+                  {userState.name ? `Almost there, ${userState.name.split(' ')[0]}!` : 'Select Your Level'}
                 </h2>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">

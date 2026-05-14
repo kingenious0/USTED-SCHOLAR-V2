@@ -1,138 +1,176 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, Brain, Zap } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { motion } from 'motion/react';
 
 export default function LandingScreen() {
   const { userState, setUserState } = useApp();
   const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: ''
+  });
 
   useEffect(() => {
     if (userState.isLoggedIn) {
       navigate('/library', { replace: true });
     }
-  }, []);
+  }, [userState.isLoggedIn, navigate]);
 
-  const features = [
-    { icon: Brain, label: 'Smart Synthesis', desc: 'Instant insights from your course materials' },
-    { icon: BookOpen, label: 'Digital Library', desc: 'All your modules, organised by programme' },
-    { icon: Zap, label: 'Active Recall', desc: 'Reinforce learning with dynamic practice' },
-  ];
+  const handleInstantAccess = async () => {
+    setLoading(true);
+    try {
+      // Secretly sign them in anonymously
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) console.error("Anonymous auth error:", error);
+      
+      const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ');
+      if (fullName) {
+        setUserState({ name: fullName });
+      }
+      
+      // Navigate straight to onboarding
+      navigate('/onboarding');
+    } catch (err) {
+      console.error("Launch failed:", err);
+      navigate('/onboarding');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google', 
+        options: { redirectTo: window.location.origin + '/onboarding' } 
+    });
+    if (error) {
+        console.error("Google Auth error:", error);
+        navigate('/onboarding'); // Fallback
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg-primary)] transition-colors duration-300 px-6 py-16 relative overflow-hidden">
+    <div className="min-h-screen flex w-full bg-[var(--bg-primary)] overflow-hidden transition-colors duration-300">
+      {/* Left side: Image Branding (Hidden on mobile) */}
+      <div className="hidden lg:flex w-[45%] flex-col justify-end p-16 bg-cover bg-center relative" 
+           style={{ backgroundImage: 'url(/hero-bg.png)' }}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+        <div className="relative z-10 text-white mb-8">
+          <div className="flex gap-2 mb-8">
+            <div className="w-12 h-1.5 bg-[var(--accent-primary)] rounded-full"></div>
+            <div className="w-12 h-1.5 bg-white/30 rounded-full"></div>
+            <div className="w-12 h-1.5 bg-white/30 rounded-full"></div>
+          </div>
+          <h1 className="text-6xl font-black mb-6 tracking-tight leading-tight">Where Ideas Flow</h1>
+          <p className="text-xl text-gray-300 max-w-md font-medium">AI-assisted workspace to craft and elevate your ideas.</p>
+        </div>
+      </div>
 
-      {/* Subtle background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#2E5BFF]/8 blur-[140px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-[#FFCC22]/5 blur-[100px] rounded-full pointer-events-none" />
-
-      <div className="w-full max-w-lg mx-auto text-center relative z-10">
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full border border-[#2E5BFF]/25 bg-[#2E5BFF]/6 text-[#2E5BFF] text-[10px] font-black tracking-[0.25em] uppercase"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2E5BFF] animate-pulse" />
-          USTED · Digital Study Hub
-        </motion.div>
-
-        {/* Wordmark */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.08 }}
-          className="mb-4"
-        >
-          <h1 className="text-[11vw] sm:text-6xl md:text-8xl font-black tracking-tighter leading-none text-[var(--text-primary)]">
-            USTED<span className="text-transparent bg-clip-text bg-gradient-to-br from-[#2E5BFF] to-[#FFCC22]">Scholar</span>
-          </h1>
-        </motion.div>
-
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.16 }}
-          className="text-[var(--text-tertiary)] text-base md:text-lg font-medium leading-relaxed mb-10 max-w-sm mx-auto"
-        >
-          The ultimate academic workspace for USTED. Built for the modern Ghanaian scholar.
-        </motion.p>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.24 }}
-          className="flex flex-col items-center gap-4"
-        >
-          {userState.hasCompletedOnboarding && userState.name ? (
-            <>
-              <button
-                onClick={() => {
-                  setUserState({ isLoggedIn: true });
-                  navigate('/library');
-                }}
-                className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
+      {/* Right side: Auth Form */}
+      <div className="w-full lg:w-[55%] flex flex-col justify-center items-center p-8 sm:p-12 relative bg-[var(--bg-primary)] transition-colors duration-300">
+        
+        <div className="w-full max-w-[420px]">
+          {/* Toggle */}
+          <div className="flex justify-end mb-16">
+            <div className="bg-[var(--bg-secondary)] p-1.5 rounded-[2rem] flex text-sm shadow-inner border border-[var(--border-color)]">
+              <button 
+                onClick={() => setIsLogin(false)}
+                className={`px-8 py-2.5 rounded-[1.5rem] font-bold transition-all ${!isLogin ? 'bg-[var(--accent-primary)] text-white shadow-md shadow-[var(--accent-primary)]/20' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
               >
-                Log In as {userState.name.split(' ')[0]}
-                <ArrowRight className="w-5 h-5" />
+                Sign Up
               </button>
               <button 
-                onClick={() => {
-                  setUserState({ hasCompletedOnboarding: false, isLoggedIn: false, name: undefined, programme: undefined, level: undefined, semester: undefined, avatarUrl: undefined });
-                  navigate('/onboarding');
-                }}
-                className="text-xs font-bold text-[var(--text-tertiary)] hover:text-[#2E5BFF] transition-colors"
+                onClick={() => setIsLogin(true)}
+                className={`px-8 py-2.5 rounded-[1.5rem] font-bold transition-all ${isLogin ? 'bg-[var(--accent-primary)] text-white shadow-md shadow-[var(--accent-primary)]/20' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
               >
-                Not you? Create new profile
+                Log In
               </button>
-            </>
-          ) : (
-            <Link
-              to="/onboarding"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-[#2E5BFF] text-white rounded-2xl font-black text-base hover:scale-[1.03] hover:shadow-2xl hover:shadow-[#2E5BFF]/25 active:scale-[0.97] transition-all shadow-xl shadow-[#2E5BFF]/15"
-            >
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          )}
-        </motion.div>
-
-        {/* Feature pills */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex flex-wrap justify-center gap-3 mt-14"
-        >
-          {features.map(({ icon: Icon, label, desc }) => (
-            <div
-              key={label}
-              className="flex items-center gap-2.5 bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl"
-            >
-              <Icon className="w-4 h-4 text-[#2E5BFF] flex-shrink-0" />
-              <div className="text-left">
-                <p className="text-[10px] font-black text-[var(--text-primary)] uppercase tracking-widest">{label}</p>
-                <p className="text-[9px] text-[var(--text-tertiary)] font-medium">{desc}</p>
-              </div>
             </div>
-          ))}
-        </motion.div>
+          </div>
 
-        {/* Footer note */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.55 }}
-          className="mt-12 text-[9px] font-bold text-[var(--text-tertiary)] uppercase tracking-[0.25em]"
-        >
-          Exclusively made for USTED Students
-        </motion.p>
+          {/* Form Header */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center md:text-left mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text-primary)] mb-3 tracking-tight">
+              {isLogin ? 'Welcome Back' : 'Create Your Account'}
+            </h2>
+            <p className="text-[var(--text-tertiary)] text-sm font-medium">Join the next generation academic workspace.</p>
+          </motion.div>
 
+          {/* Form Inputs */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="space-y-4">
+            {!isLogin && (
+              <div className="flex gap-4">
+                <input 
+                  type="text" 
+                  placeholder="First Name" 
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Last Name" 
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
+                />
+              </div>
+            )}
+            
+            <input 
+              type="email" 
+              placeholder="Email Address (Optional)" 
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
+            />
+            
+            <button 
+              onClick={handleInstantAccess}
+              disabled={loading}
+              className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-4 mt-6 font-black text-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-[var(--accent-primary)]/20 disabled:opacity-50"
+            >
+              {loading ? 'Entering...' : 'Dive In'}
+            </button>
+          </motion.div>
+
+          {/* Separator */}
+          <div className="flex items-center my-8">
+            <div className="flex-1 border-t border-[var(--border-color)]"></div>
+            <span className="px-4 text-[var(--text-tertiary)] text-xs uppercase tracking-widest font-bold">Or</span>
+            <div className="flex-1 border-t border-[var(--border-color)]"></div>
+          </div>
+
+          {/* Social Logins */}
+          <div className="flex justify-center">
+            <button onClick={handleGoogleAuth} className="w-full h-14 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl flex items-center justify-center gap-3 hover:bg-[var(--bg-tertiary)] hover:border-[var(--accent-primary)]/50 active:scale-[0.97] transition-all text-[var(--text-primary)] font-bold">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+          </div>
+
+          {/* Footer Terms */}
+          <div className="mt-10 text-center">
+            <p className="text-[var(--text-tertiary)] text-[11px] leading-relaxed">
+              By joining USTED Scholar, you agree to our{' '}
+              <a href="#" className="font-semibold text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">Terms of Service</a>
+              {' '}and{' '}
+              <a href="#" className="font-semibold text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">Privacy Policy</a>.
+            </p>
+          </div>
+
+        </div>
       </div>
     </div>
   );
