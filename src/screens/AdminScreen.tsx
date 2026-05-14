@@ -350,7 +350,7 @@ export default function AdminScreen() {
 
                    <button 
                      type="submit"
-                     disabled={loading || !file || !name || !programme}
+                     disabled={loading || !file || !name || programmes.length === 0}
                      className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-5 font-black uppercase tracking-widest text-xs shadow-xl shadow-[var(--accent-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale flex flex-col items-center justify-center gap-1"
                    >
                       {loading ? (
