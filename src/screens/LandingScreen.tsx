@@ -135,8 +135,8 @@ export default function LandingScreen() {
             
             <button 
               onClick={handleInstantAccess}
-              disabled={loading}
-              className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-4 mt-4 font-black text-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-[var(--accent-primary)]/20 disabled:opacity-50"
+              disabled={loading || !formData.email || !formData.email.includes('@') || (!isLogin && (!formData.firstName || !formData.lastName))}
+              className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-4 mt-4 font-black text-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-[var(--accent-primary)]/20 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {loading ? (isLogin ? 'Logging in...' : 'Creating...') : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
@@ -158,9 +158,6 @@ export default function LandingScreen() {
 
           {/* Footer Terms */}
           <div className="mt-12 text-center">
-            <p className="text-[var(--text-tertiary)] text-[10px] leading-relaxed uppercase tracking-wider font-bold opacity-50 mb-4">
-              
-            </p>
             <p className="text-[var(--text-tertiary)] text-[11px] leading-relaxed">
               By joining USTED Scholar, you agree to our{' '}
               <a href="#" className="font-semibold text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">Terms of Service</a>
