@@ -20,6 +20,11 @@ export default function AdminScreen() {
   const [courses, setCourses] = useState<any[]>([]);
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({ type: null, message: '' });
   
+  const [activeTab, setActiveTab] = useState<'courses' | 'users'>('courses');
+  const [users, setUsers] = useState<any[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  
   // Form State
   const [name, setName] = useState('');
   const [level, setLevel] = useState('100');
@@ -101,7 +106,16 @@ export default function AdminScreen() {
 
   useEffect(() => {
     fetchCourses();
+    fetchUsers();
   }, []);
+
+  async function fetchUsers() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data) setUsers(data);
+  }
 
   async function fetchCourses() {
     const { data } = await supabase
@@ -232,6 +246,26 @@ export default function AdminScreen() {
     fetchCourses();
   };
 
+  const deleteUser = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete ${name}? This will remove their profile and login access.`)) return;
+    
+    setDeletingUser(id);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manager', {
+        body: { action: 'deleteUser', userId: id }
+      });
+
+      if (error) throw error;
+      
+      // Update local state
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (error: any) {
+      alert(`Failed to delete user: ${error.message}`);
+    } finally {
+      setDeletingUser(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] p-6 lg:p-12 transition-colors duration-300">
       <div className="max-w-6xl mx-auto">
@@ -252,10 +286,34 @@ export default function AdminScreen() {
                    <p className="text-xl font-black text-[var(--text-primary)]">{courses.length}</p>
                 </div>
              </div>
+             <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-4 rounded-2xl flex items-center gap-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                <div>
+                   <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase">Total Scholars</p>
+                   <p className="text-xl font-black text-[var(--text-primary)]">{users.length}</p>
+                </div>
+             </div>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-10 bg-[var(--bg-secondary)] p-1.5 rounded-2xl border border-[var(--border-color)] w-full max-w-md">
+           <button 
+             onClick={() => setActiveTab('courses')}
+             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'courses' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-tertiary)]'}`}
+           >
+             Manage Courses
+           </button>
+           <button 
+             onClick={() => setActiveTab('users')}
+             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'users' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-tertiary)]'}`}
+           >
+             Manage Scholars
+           </button>
+        </div>
+
+        {activeTab === 'courses' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Upload Form */}
           <section className="lg:col-span-1">
              <form onSubmit={handleUpload} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden">
@@ -475,6 +533,72 @@ export default function AdminScreen() {
              </div>
           </section>
         </div>
+        ) : (
+          /* User Management Tab */
+          <section>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2.5rem] p-8 shadow-sm">
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                 <h2 className="text-xl font-black text-[var(--text-primary)] flex items-center gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                    Scholar Directory
+                 </h2>
+                 <div className="relative flex-1 max-w-md">
+                    <input 
+                      type="text" 
+                      placeholder="Search by name or email..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl py-3 px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all"
+                    />
+                 </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {users.filter(u => 
+                    u.name?.toLowerCase().includes(userSearch.toLowerCase()) || 
+                    u.email?.toLowerCase().includes(userSearch.toLowerCase())
+                  ).map(user => (
+                    <div key={user.id} className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl p-5 hover:border-[var(--accent-primary)]/30 transition-all">
+                       <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] font-black flex items-center justify-center text-xs">
+                                {user.name?.[0] || 'S'}
+                             </div>
+                             <div>
+                                <h4 className="font-bold text-[var(--text-primary)] text-sm">{user.name || 'Anonymous Scholar'}</h4>
+                                <p className="text-[10px] text-[var(--text-tertiary)] font-medium truncate max-w-[150px]">{user.email || 'No email provided'}</p>
+                             </div>
+                          </div>
+                          <button 
+                            disabled={deletingUser === user.id}
+                            onClick={() => deleteUser(user.id, user.name)}
+                            className="p-2 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all"
+                          >
+                             {deletingUser === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
+                       </div>
+                       
+                       <div className="flex flex-wrap gap-2 pt-4 border-t border-[var(--border-color)]">
+                          <span className="text-[8px] font-black text-[var(--text-tertiary)] uppercase tracking-widest px-2 py-0.5 bg-[var(--bg-secondary)] rounded-full">
+                             {user.level ? `L${user.level}` : 'No Level'}
+                          </span>
+                          <span className="text-[8px] font-black text-[var(--text-tertiary)] uppercase tracking-widest px-2 py-0.5 bg-[var(--bg-secondary)] rounded-full truncate max-w-[100px]">
+                             {user.programme || 'No Programme'}
+                          </span>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+
+               {users.length === 0 && (
+                 <div className="py-20 text-center border-2 border-dashed border-[var(--border-color)] rounded-3xl">
+                    <Database className="w-12 h-12 text-[var(--text-tertiary)]/20 mx-auto mb-4" />
+                    <p className="text-xs font-bold text-[var(--text-tertiary)] uppercase">No scholars found</p>
+                 </div>
+               )}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Edit Modal */}
