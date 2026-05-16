@@ -10,10 +10,12 @@ export default function LandingScreen() {
   const [isLogin, setIsLogin] = useState(true); // Default to Log In
   const [loading, setLoading] = useState(false);
   
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    phone: ''
   });
 
   useEffect(() => {
@@ -29,9 +31,17 @@ export default function LandingScreen() {
       if (error) console.error("Anonymous auth error:", error);
       
       const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ');
-      if (fullName) {
-        setUserState({ name: fullName });
-      }
+      
+      // Save identity data to AppContext for the Onboarding screen to pick up
+      setUserState({ 
+        name: fullName || userState.name,
+        // We'll save the phone/email to the profile in the next step (Onboarding)
+      });
+
+      // Save to localStorage temporarily so onboarding can grab it
+      localStorage.setItem('pending_phone', formData.phone);
+      localStorage.setItem('pending_email', formData.email);
+      if (fullName) localStorage.setItem('pending_name', fullName);
       
       navigate('/onboarding');
     } catch (err) {
@@ -50,6 +60,19 @@ export default function LandingScreen() {
     if (error) {
         console.error("Google Auth error:", error);
         navigate('/onboarding');
+    }
+  };
+
+  const isFormValid = () => {
+    if (loading) return false;
+    if (authMethod === 'email') {
+      const emailValid = formData.email && formData.email.includes('@');
+      if (isLogin) return emailValid;
+      return emailValid && formData.firstName && formData.lastName;
+    } else {
+      const phoneValid = formData.phone && formData.phone.length >= 10;
+      if (isLogin) return phoneValid;
+      return phoneValid && formData.firstName && formData.lastName;
     }
   };
 
@@ -100,12 +123,28 @@ export default function LandingScreen() {
           {/* Separator */}
           <div className="flex items-center my-8">
             <div className="flex-1 border-t border-[var(--border-color)]"></div>
-            <span className="px-4 text-[var(--text-tertiary)] text-[10px] uppercase tracking-widest font-black">Or use email</span>
+            <span className="px-4 text-[var(--text-tertiary)] text-[10px] uppercase tracking-widest font-black">Or use {authMethod}</span>
             <div className="flex-1 border-t border-[var(--border-color)]"></div>
           </div>
 
           {/* Form Inputs */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="space-y-4">
+            {/* Auth Method Toggle */}
+            <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border-color)] mb-6">
+              <button 
+                onClick={() => setAuthMethod('email')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${authMethod === 'email' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-tertiary)]'}`}
+              >
+                Email
+              </button>
+              <button 
+                onClick={() => setAuthMethod('phone')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${authMethod === 'phone' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-tertiary)]'}`}
+              >
+                Phone
+              </button>
+            </div>
+
             {!isLogin && (
               <div className="flex gap-4">
                 <input 
@@ -125,17 +164,29 @@ export default function LandingScreen() {
               </div>
             )}
             
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
-            />
+            {authMethod === 'email' ? (
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
+              />
+            ) : (
+              <input 
+                type="tel" 
+                name="phone"
+                autoComplete="tel"
+                placeholder="Phone Number (e.g. +233...)" 
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all placeholder:text-[var(--text-tertiary)] font-medium" 
+              />
+            )}
             
             <button 
               onClick={handleInstantAccess}
-              disabled={loading || !formData.email || !formData.email.includes('@') || (!isLogin && (!formData.firstName || !formData.lastName))}
+              disabled={!isFormValid()}
               className="w-full bg-[var(--accent-primary)] text-white rounded-2xl py-4 mt-4 font-black text-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-xl shadow-[var(--accent-primary)]/20 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {loading ? (isLogin ? 'Logging in...' : 'Creating...') : (isLogin ? 'Sign In' : 'Create Account')}

@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail, Loader2
 import { ACADEMIC_DATA } from '../lib/academicData';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { sendWelcomeSMS } from '../lib/sms';
 
 export default function OnboardingScreen() {
   const { userState, setUserState } = useApp();
@@ -19,7 +20,8 @@ export default function OnboardingScreen() {
   const [selections, setSelections] = useState({
     programme: userState.programme || '',
     level: userState.level || '',
-    semester: userState.semester || ''
+    semester: userState.semester || '',
+    phone: localStorage.getItem('pending_phone') || ''
   });
 
   useEffect(() => {
@@ -70,10 +72,16 @@ export default function OnboardingScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
+        const pendingPhone = localStorage.getItem('pending_phone');
+        const pendingEmail = localStorage.getItem('pending_email');
+        const pendingName = localStorage.getItem('pending_name');
+        
         // Save the profile to Supabase
         const { error } = await supabase.from('profiles').upsert({
           id: session.user.id,
-          name: userState.name || 'Scholar',
+          name: pendingName || userState.name || 'Scholar',
+          email: pendingEmail || session.user.email,
+          phone: selections.phone || pendingPhone,
           programme: selections.programme,
           level: selections.level,
           semester: selections.semester,
@@ -81,6 +89,16 @@ export default function OnboardingScreen() {
         });
         
         if (error) console.error("Error saving profile to Supabase:", error);
+        
+        // Trigger Welcome SMS if they used a phone number
+        if (selections.phone || pendingPhone) {
+          sendWelcomeSMS(selections.phone || pendingPhone!, userState.name || 'Scholar');
+        }
+        
+        // Clean up
+        localStorage.removeItem('pending_phone');
+        localStorage.removeItem('pending_email');
+        localStorage.removeItem('pending_name');
       }
     } catch (err) {
       console.error("Profile save error:", err);
@@ -199,6 +217,7 @@ export default function OnboardingScreen() {
               </motion.div>
             )}
 
+            {/* STEP 2 — Level/Semester */}
             {step === 2 && (
               <motion.div
                 key="step2"
@@ -274,11 +293,69 @@ export default function OnboardingScreen() {
 
                 <button
                   disabled={!selections.level || !selections.semester}
-                  onClick={handleComplete}
+                  onClick={() => {
+                    const hasPhone = localStorage.getItem('pending_phone') || selections.phone;
+                    if (hasPhone) handleComplete();
+                    else setStep(3);
+                  }}
                   className="w-full py-5 bg-[var(--accent-primary)] text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                 >
-                  Launch Workspace
+                  Continue to Final Step
                   <ArrowRight className="w-5 h-5" />
+                </button>
+              </motion.div>
+            )}
+
+            {/* STEP 3 — Phone Number (For Google Users) */}
+            {step === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <div className="mb-10">
+                  <div className="flex justify-between items-end mb-4">
+                     <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">Step 3 of 3</p>
+                     <p className="text-emerald-500 font-bold">Secure Access</p>
+                  </div>
+                  <div className="h-1.5 w-full bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-full shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Secure Your Workspace</h2>
+                <p className="text-[var(--text-tertiary)] mb-8">Enter your phone number to enable instant SMS sync and backup login options.</p>
+                
+                <div className="mb-10">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Ghanaian Phone Number</label>
+                  <div className="relative">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 pr-3 border-r border-[var(--border-color)]">
+                      <span className="text-lg">🇬🇭</span>
+                      <span className="font-bold text-[var(--text-secondary)]">+233</span>
+                    </div>
+                    <input 
+                      type="tel"
+                      name="phone_onboarding"
+                      autoComplete="tel"
+                      placeholder="54XXXXXXX"
+                      value={selections.phone}
+                      onChange={(e) => setSelections(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
+                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl py-5 pl-32 pr-6 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all text-lg font-bold tracking-widest text-[var(--text-primary)]"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-4 italic">
+                    * We'll send a welcome SMS to confirm your cloud workspace setup.
+                  </p>
+                </div>
+
+                <button
+                  disabled={selections.phone.length < 9}
+                  onClick={handleComplete}
+                  className="w-full py-5 bg-emerald-500 text-white rounded-premium font-bold text-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                >
+                  Complete Setup & Launch
+                  <CheckCircle2 className="w-5 h-5" />
                 </button>
               </motion.div>
             )}
