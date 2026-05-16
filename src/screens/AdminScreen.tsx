@@ -3,15 +3,10 @@ import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Database, Plus, Trash2, ArrowLeft, Zap, Sparkles, Pencil, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ACADEMIC_DATA } from '../lib/academicData';
+import { extractTextFromPdf } from '../lib/pdfUtils';
 import * as pdfjs from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
-import { ACADEMIC_DATA } from '../lib/academicData';
-
-// Configure PDF.js Worker (Vite-compatible local worker)
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
 
 export default function AdminScreen() {
   const [loading, setLoading] = useState(false);
@@ -167,9 +162,19 @@ export default function AdminScreen() {
 
     try {
       let fileToUpload: Blob | File = file;
+      let extractedText = '';
+
+      // --- PURE TEXT EXTRACTION (PRE-SNIPER) ---
+      try {
+        setUploadStatus({ type: null, message: 'Extracting academic DNA... 🧬' });
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractTextFromPdf(arrayBuffer);
+      } catch (err) {
+        console.warn("Text extraction failed, AI will rely on vision later:", err);
+      }
 
       // --- SNIPER MODE (SMART OPTIMIZER) ---
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 48 * 1024 * 1024) {
         setIsOptimizing(true);
         setUploadStatus({ type: null, message: 'Sniper Mode: Hunting for bloat... 🎯' });
         
@@ -219,7 +224,8 @@ export default function AdminScreen() {
           programme: programmes.length === 1 ? programmes[0] : programmes.join(','), // legacy compat
           programmes: programmes,   // new array column
           file_type: 'PDF',
-          file_id: Math.random().toString(36).substring(2, 15)
+          file_id: Math.random().toString(36).substring(2, 15),
+          full_text: extractedText
         }]);
 
       if (dbError) throw dbError;

@@ -2,13 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from './supabase';
 import Groq from 'groq-sdk';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
+import { extractTextFromPdf } from './pdfUtils';
 import * as pdfjs from 'pdfjs-dist';
-
-// Configure PDF.js Worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
 
 const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -46,30 +41,21 @@ function cleanAIText(text: string) {
 
 const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-async function extractTextFromPdf(pdfBuffer: ArrayBuffer): Promise<string> {
-  try {
-    const loadingTask = pdfjs.getDocument({ data: pdfBuffer.slice(0) });
-    const pdf = await loadingTask.promise;
-    let fullText = '';
-    for (let i = 1; i <= Math.min(pdf.numPages, 100); i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const strings = content.items.map((item: any) => item.str);
-      fullText += strings.join(' ') + '\n';
-      if (fullText.length > 150000) break;
-    }
-    return fullText.trim();
-  } catch (e) {
-    return '';
-  }
-}
-
 async function fetchPdfBufferFromStorage(fileId: string): Promise<ArrayBuffer | null> {
   try {
     let query = supabase.from('courses').select('storage_path');
-    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-    else query = query.eq('file_id', fileId);
-    const { data: course } = await query.maybeSingle();
+    
+    if (isUUID(fileId)) {
+      query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    } else {
+      // If not a UUID, it's definitely a file_id string
+      query = query.eq('file_id', fileId);
+    }
+    
+    // Always get the latest upload
+    const { data: courses } = await query.order('created_at', { ascending: false });
+    const course = courses?.[0];
+    
     if (!course?.storage_path) return null;
     const { data } = await supabase.storage.from('course-materials').download(course.storage_path);
     return data ? await data.arrayBuffer() : null;
@@ -79,31 +65,102 @@ async function fetchPdfBufferFromStorage(fileId: string): Promise<ArrayBuffer | 
 }
 
 // Service: Generate Synthesis
-export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void) {
+export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void, force: boolean = false) {
   onUpdate('', 'Checking neural cache...');
-  let query = supabase.from('courses').select('synthesis, full_text');
-  if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-  else query = query.eq('file_id', fileId);
-  const { data: cached } = await query.maybeSingle();
+  
+  if (!force) {
+    let query = supabase.from('courses').select('synthesis, full_text');
+    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    else query = query.eq('file_id', fileId);
+    const { data: cached } = await query.maybeSingle();
 
-  if (cached?.synthesis) {
-    const cleanedCache = cleanAIText(cached.synthesis);
-    onUpdate(cleanedCache, 'Ready');
-    return cleanedCache;
-  }
-
-  let textToProcess = cached?.full_text || '';
-  if (!textToProcess) {
-    onUpdate('', 'Extracting text...');
-    const buffer = await fetchPdfBufferFromStorage(fileId);
-    if (buffer) {
-      textToProcess = await extractTextFromPdf(buffer);
-      if (textToProcess) {
-        await supabase.from('courses').update({ full_text: textToProcess }).eq('id', fileId);
-      }
+    if (cached?.synthesis) {
+      const cleanedCache = cleanAIText(cached.synthesis);
+      onUpdate(cleanedCache, 'Ready');
+      return cleanedCache;
+    }
+    
+    // If not forced, try to use full_text if available
+    let textToProcess = cached?.full_text || '';
+    if (textToProcess) {
+       return await performSynthesis(fileId, textToProcess, onUpdate);
     }
   }
 
+  // Force extraction or no cache found
+  onUpdate('', 'Extracting text...');
+  const buffer = await fetchPdfBufferFromStorage(fileId);
+  if (!buffer) {
+    onUpdate('### Error: Could not reach document storage.', 'Error');
+    return;
+  }
+
+  let textToProcess = await extractTextFromPdf(buffer, (page, total) => {
+    onUpdate('', `Reading Page ${page}/${total}... 👁️`);
+  });
+  
+  if (!textToProcess) {
+    onUpdate('', 'Visualizing document (OCR Mode)... 👁️');
+    try {
+      const data = new Uint8Array(buffer.slice(0));
+      const pdf = await pdfjs.getDocument({ data }).promise;
+      const pagesToProcess = Math.min(pdf.numPages, 5); // Scan 5 pages for deep context
+      const parts: any[] = [{ text: "Extract all academic text from these pages. Focus on headings, key concepts, and structure. No fluff." }];
+
+      for (let i = 1; i <= pagesToProcess; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context!, viewport }).promise;
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        parts.push({ 
+          inlineData: { 
+            mimeType: "image/jpeg", 
+            data: dataUrl.split(',')[1] 
+          } 
+        });
+      }
+      
+      const visionResponse = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          provider: 'gemini',
+          payload: {
+            model: 'gemini-2.0-flash',
+            contents: [{ parts }]
+          }
+        })
+      });
+      const visionData = await visionResponse.json();
+      const extracted = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (extracted) {
+        textToProcess += extracted + "\n";
+      }
+    } catch (visionErr) {
+      console.error("Vision fallback failed:", visionErr);
+    }
+  }
+
+  if (!textToProcess) {
+    onUpdate('### Error: PDF extraction failed.\n\nThe document appears to be empty or non-readable even with Vision AI.', 'Error');
+    return;
+  }
+
+  // Save the extracted text for future use
+  let saveQuery = supabase.from('courses').update({ full_text: textToProcess });
+  if (isUUID(fileId)) saveQuery = saveQuery.eq('id', fileId);
+  else saveQuery = saveQuery.eq('file_id', fileId);
+  await saveQuery;
+  
+  return await performSynthesis(fileId, textToProcess, onUpdate);
+}
+
+async function performSynthesis(fileId: string, textToProcess: string, onUpdate: (text: string, stage?: string) => void) {
   onUpdate('', 'Secure AI Synthesis...');
   try {
     const response = await fetch(GATEWAY_URL, {
@@ -140,7 +197,13 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
       }
     }
     const final = cleanAIText(text);
-    await supabase.from('courses').update({ synthesis: final }).eq('id', fileId);
+    
+    // Safety Update: Target the right column based on ID type
+    let updateQuery = supabase.from('courses').update({ synthesis: final });
+    if (isUUID(fileId)) updateQuery = updateQuery.eq('id', fileId);
+    else updateQuery = updateQuery.eq('file_id', fileId);
+    
+    await updateQuery;
     return final;
   } catch (e) {
     console.error('Synthesis failed:', e);

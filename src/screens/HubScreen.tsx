@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,7 +10,8 @@ import { generateSynthesis, streamChat } from '../lib/ai';
 import { supabase } from '../lib/supabase';
 
 export default function HubScreen() {
-  const { selectedFile } = useApp();
+  const { selectedFile, setSelectedFile } = useApp();
+  const location = useLocation();
   const [messages, setMessages] = useState<{role: string, text: string, imageUrl?: string|null, id?: number}[]>([]);
   const [threads, setThreads] = useState<{id: string, title: string}[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string>('');
@@ -26,6 +27,25 @@ export default function HubScreen() {
   const [isSyncingThreads, setIsSyncingThreads] = useState(false);
   const [isSyncingMessages, setIsSyncingMessages] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const isInitializingRef = React.useRef(false);
+
+  // Sync from navigation state if provided (Handshake Fix)
+  useEffect(() => {
+    console.log("HubScreen Mount Check - SelectedFile:", selectedFile);
+    console.log("HubScreen Navigation State:", location.state);
+    
+    if (location.state?.course) {
+      console.log("Restoring course from Navigation State:", location.state.course);
+      setSelectedFile(location.state.course);
+    } else if (selectedFile) {
+      console.log("Continuing with Context File:", selectedFile);
+    }
+  }, [location.state, setSelectedFile]);
+
+  // Handle Header and Initial Sync
+  // Force a re-render if selectedFile is found in context
+  const targetId = selectedFile?.file_id || selectedFile?.id;
+  const courseName = selectedFile?.name || "Academic Knowledge Base";
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,12 +88,14 @@ export default function HubScreen() {
     const targetId = selectedFile?.file_id || selectedFile?.id;
     if (targetId) {
       const fetchThreads = async () => {
+        if (isInitializingRef.current) return;
+        isInitializingRef.current = true;
         setIsSyncingThreads(true);
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.user) return;
 
-          const { data: dbThreads, error } = await supabase
+          let { data: dbThreads, error } = await supabase
             .from('chat_threads')
             .select('*')
             .eq('user_id', session.user.id)
@@ -83,22 +105,40 @@ export default function HubScreen() {
           if (error) throw error;
 
           if (!dbThreads || dbThreads.length === 0) {
-            // Create initial thread in DB
-            const { data: newThread, error: createError } = await supabase
-              .from('chat_threads')
-              .insert({
-                user_id: session.user.id,
-                file_id: targetId,
-                title: 'Session 1'
-              })
-              .select()
-              .single();
+            let retryCount = 0;
+            let lastCreateError: any = null;
+            
+            while (retryCount < 3) {
+              const { data: newThread, error: createError } = await supabase
+                .from('chat_threads')
+                .insert([{ user_id: session.user.id, file_id: targetId, title: 'Session 1' }])
+                .select()
+                .single();
 
-            if (createError) throw createError;
-            setThreads([newThread]);
-            setActiveThreadId(newThread.id);
-            loadMessages(newThread.id);
-          } else {
+              if (!createError) {
+                dbThreads = [newThread];
+                break;
+              }
+
+              lastCreateError = createError;
+              if (createError.code === '23505') {
+                 const { data: refetch } = await supabase.from('chat_threads').select('*').eq('user_id', session.user.id).eq('file_id', targetId);
+                 dbThreads = refetch;
+                 break;
+              } else if (createError.code === '23503') {
+                // Wait for profile sync
+                console.warn("Identity sync in progress, retrying in 1s...");
+                await new Promise(r => setTimeout(r, 1000));
+                retryCount++;
+              } else {
+                throw createError;
+              }
+            }
+
+            if (!dbThreads && lastCreateError) throw lastCreateError;
+          }
+
+          if (dbThreads && dbThreads.length > 0) {
             setThreads(dbThreads);
             const lastThreadId = dbThreads[dbThreads.length - 1].id;
             setActiveThreadId(lastThreadId);
@@ -109,6 +149,7 @@ export default function HubScreen() {
           // Fallback to localStorage if DB fails? No, better to let user know.
         } finally {
           setIsSyncingThreads(false);
+          isInitializingRef.current = false;
         }
       };
       
