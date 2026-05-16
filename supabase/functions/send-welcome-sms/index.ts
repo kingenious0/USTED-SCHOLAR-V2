@@ -14,8 +14,7 @@ serve(async (req) => {
     const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY')
     const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME')
     
-    // Using your freshly approved Identity
-    const SENDER_ID = "USTEDSCHLR"
+    const SENDER_ID = "USTEDSCHLR" 
 
     // 🧼 Clean and format phone number to strict 233XXXXXXXXX format (No leading 0!)
     let formattedPhone = phone.replace(/\D/g, '')
@@ -35,7 +34,7 @@ serve(async (req) => {
       destinations: [
         {
           destination: formattedPhone,
-          msgid: `MSG_${Date.now()}`
+          msgid: `${Date.now()}` // Simplified ID
         }
       ],
       message: message,
