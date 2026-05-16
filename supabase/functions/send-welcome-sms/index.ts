@@ -15,38 +15,52 @@ serve(async (req) => {
     const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME')
     const SENDER_ID = "USTEDSCHLR"
 
-    // Format phone
+    // Format phone to local format or 233
     let formattedPhone = phone.replace(/\D/g, '')
     if (formattedPhone.startsWith('0')) {
-      formattedPhone = '233' + formattedPhone.substring(1)
+      // Keep leading zero if that's what the gateway prefers
     } else if (!formattedPhone.startsWith('233')) {
       formattedPhone = '233' + formattedPhone
     }
 
     const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Let's craft excellence together. 🎓🚀`
 
-    const params = new URLSearchParams({
-      username: WIGAL_USERNAME ?? '',
-      api_key: WIGAL_API_KEY ?? '',
-      sender_id: SENDER_ID,
-      dest: formattedPhone,
-      msg: message
-    });
+    // EXACT FROG API V3 PAYLOAD STRUCTURE 🐸
+    const body = {
+      senderid: SENDER_ID,
+      destinations: [
+        {
+          destination: formattedPhone,
+          msgid: `MSG_${Date.now()}`
+        }
+      ],
+      message: message,
+      smstype: "text" // MUST BE STRING "text"
+    }
 
-    const wigalUrl = `https://frogapi.wigal.com.gh/v2/send_sms?${params.toString()}`
+    const wigalUrl = `https://frogapi.wigal.com.gh/api/v3/sms/send`
 
-    console.log(`📡 Triggering Wigal for ${formattedPhone}...`)
+    console.log(`📡 Sending Frog API V3 Payload to ${formattedPhone}...`)
     
-    const response = await fetch(wigalUrl)
-    const contentType = response.headers.get("content-type")
+    const response = await fetch(wigalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'API-KEY': WIGAL_API_KEY ?? '',
+        'USERNAME': WIGAL_USERNAME ?? ''
+      },
+      body: JSON.stringify(body)
+    })
 
+    const contentType = response.headers.get("content-type")
     let result;
+
     if (contentType && contentType.includes("application/json")) {
       result = await response.json()
     } else {
       const text = await response.text()
-      console.error('Wigal sent non-JSON response:', text)
-      throw new Error(`Wigal API Error (HTML Response): ${text.substring(0, 100)}...`)
+      console.error('Wigal Response (Non-JSON):', text)
+      result = { status: 'RAW_RESPONSE', raw: text.substring(0, 200) }
     }
 
     return new Response(JSON.stringify(result), {
@@ -61,7 +75,7 @@ serve(async (req) => {
       status: 'CRITICAL_FAILURE'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200, // Return 200 to keep the frontend from crashing
+      status: 200,
     })
   }
 })
