@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
+import { supabase } from '../lib/supabase';
 
 export default function HubScreen() {
   const { selectedFile } = useApp();
@@ -22,6 +23,8 @@ export default function HubScreen() {
   const [synthesisStage, setSynthesisStage] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSyncingThreads, setIsSyncingThreads] = useState(false);
+  const [isSyncingMessages, setIsSyncingMessages] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,118 +63,193 @@ export default function HubScreen() {
     }
   };
 
-  // 1. Load threads for the course
+  // 1. Load threads for the course from Supabase
   useEffect(() => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
     if (targetId) {
-      const savedThreads = localStorage.getItem(`threads_${targetId}`);
-      let currentThreads = savedThreads ? JSON.parse(savedThreads) : [];
-      
-      if (currentThreads.length === 0) {
-        const newId = Date.now().toString();
-        currentThreads = [{ id: newId, title: 'Session 1' }];
-        localStorage.setItem(`threads_${targetId}`, JSON.stringify(currentThreads));
-      }
-      
-      setThreads(currentThreads);
-      
-      // Initialize active thread and load its messages
-      const initialThreadId = activeThreadId && currentThreads.find((t: any) => t.id === activeThreadId) 
-        ? activeThreadId 
-        : currentThreads[currentThreads.length - 1].id;
-        
-      setActiveThreadId(initialThreadId);
-      
-      const savedMsgs = localStorage.getItem(`chat_${targetId}_${initialThreadId}`);
-      if (savedMsgs) {
-        setMessages(JSON.parse(savedMsgs));
-      } else {
-        setMessages([{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }]);
-      }
-    }
-  }, [selectedFile]); // Only run when selectedFile changes
+      const fetchThreads = async () => {
+        setIsSyncingThreads(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) return;
 
-  // Synchronous thread switching to prevent race conditions
-  const switchThread = (newId: string) => {
-    const targetId = selectedFile?.file_id || selectedFile?.id;
-    setActiveThreadId(newId);
-    if (targetId) {
-      const savedMsgs = localStorage.getItem(`chat_${targetId}_${newId}`);
-      if (savedMsgs) {
-        setMessages(JSON.parse(savedMsgs));
+          const { data: dbThreads, error } = await supabase
+            .from('chat_threads')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .eq('file_id', targetId)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+
+          if (!dbThreads || dbThreads.length === 0) {
+            // Create initial thread in DB
+            const { data: newThread, error: createError } = await supabase
+              .from('chat_threads')
+              .insert({
+                user_id: session.user.id,
+                file_id: targetId,
+                title: 'Session 1'
+              })
+              .select()
+              .single();
+
+            if (createError) throw createError;
+            setThreads([newThread]);
+            setActiveThreadId(newThread.id);
+            loadMessages(newThread.id);
+          } else {
+            setThreads(dbThreads);
+            const lastThreadId = dbThreads[dbThreads.length - 1].id;
+            setActiveThreadId(lastThreadId);
+            loadMessages(lastThreadId);
+          }
+        } catch (err) {
+          console.error('Error fetching threads:', err);
+          // Fallback to localStorage if DB fails? No, better to let user know.
+        } finally {
+          setIsSyncingThreads(false);
+        }
+      };
+      
+      fetchThreads();
+    }
+  }, [selectedFile]);
+
+  const loadMessages = async (threadId: string) => {
+    setIsSyncingMessages(true);
+    try {
+      const { data: dbMessages, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (dbMessages && dbMessages.length > 0) {
+        setMessages(dbMessages.map(m => ({
+          role: m.role,
+          text: m.text,
+          imageUrl: m.image_url,
+          id: m.id
+        })));
       } else {
         setMessages([{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }]);
       }
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    } finally {
+      setIsSyncingMessages(false);
     }
   };
 
-  // 3. Save messages and auto-name the thread
+  // Synchronous thread switching
+  const switchThread = (newId: string) => {
+    setActiveThreadId(newId);
+    loadMessages(newId);
+  };
+
+  // 3. Auto-name the thread
   useEffect(() => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
     if (targetId && activeThreadId && messages.length > 0) {
-      localStorage.setItem(`chat_${targetId}_${activeThreadId}`, JSON.stringify(messages));
-      
       const currentThread = threads.find(t => t.id === activeThreadId);
       if (currentThread && currentThread.title.startsWith('Session')) {
         const firstUserMsg = messages.find(m => m.role === 'user');
         // @ts-ignore - we add isGeneratingTitle dynamically to prevent loops
         if (firstUserMsg && firstUserMsg.text && !currentThread.isGeneratingTitle) {
           
-          // Optimistically mark as generating to prevent re-triggering
           setThreads(prev => prev.map(t => t.id === activeThreadId ? { ...t, isGeneratingTitle: true } : t));
           
           import('../lib/ai').then(({ generateThreadTitle }) => {
-            generateThreadTitle(firstUserMsg.text).then(newTitle => {
-              setThreads(prev => {
-                const newThreads = prev.map(t => 
+            generateThreadTitle(firstUserMsg.text).then(async (newTitle) => {
+              // Update title in DB
+              const { error } = await supabase
+                .from('chat_threads')
+                .update({ title: newTitle })
+                .eq('id', activeThreadId);
+
+              if (!error) {
+                setThreads(prev => prev.map(t => 
                   t.id === activeThreadId ? { ...t, title: newTitle, isGeneratingTitle: undefined } : t
-                );
-                localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
-                return newThreads;
-              });
+                ));
+              }
             });
           });
         }
       }
     }
-  }, [messages]); // ONLY depend on messages to avoid saving old messages to new thread ID
+  }, [messages]); 
 
-  const startNewChat = () => {
+  const startNewChat = async () => {
     const targetId = selectedFile?.file_id || selectedFile?.id;
     if (targetId) {
-      const newId = Date.now().toString();
-      const newTitle = `Session ${threads.length + 1}`;
-      const newThreads = [...threads, { id: newId, title: newTitle }];
-      setThreads(newThreads);
-      localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
-      
-      // Update synchronously
-      setActiveThreadId(newId);
-      const initialMsgs = [{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }];
-      setMessages(initialMsgs);
-      localStorage.setItem(`chat_${targetId}_${newId}`, JSON.stringify(initialMsgs));
+      setIsSyncingThreads(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        const { data: newThread, error } = await supabase
+          .from('chat_threads')
+          .insert({
+            user_id: session.user.id,
+            file_id: targetId,
+            title: `Session ${threads.length + 1}`
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setThreads(prev => [...prev, newThread]);
+        setActiveThreadId(newThread.id);
+        setMessages([{ role: 'ai', text: `Hello Scholar! I've loaded ${selectedFile?.name || 'your notes'}. Would you like a quick summary or a quiz to test your understanding?` }]);
+      } catch (err) {
+        console.error('Error starting new chat:', err);
+      } finally {
+        setIsSyncingThreads(false);
+      }
     }
   };
 
-  const deleteThreadById = (id: string) => {
+  const deleteThreadById = async (id: string) => {
     if (window.confirm("Delete this session permanently?")) {
       const targetId = selectedFile?.file_id || selectedFile?.id;
       if (targetId) {
-        localStorage.removeItem(`chat_${targetId}_${id}`);
-        const newThreads = threads.filter(t => t.id !== id);
-        
-        if (newThreads.length === 0) {
-          const newId = Date.now().toString();
-          const initialThread = [{ id: newId, title: 'Session 1' }];
-          setThreads(initialThread);
-          localStorage.setItem(`threads_${targetId}`, JSON.stringify(initialThread));
-          switchThread(newId);
-        } else {
-          setThreads(newThreads);
-          localStorage.setItem(`threads_${targetId}`, JSON.stringify(newThreads));
-          if (activeThreadId === id) {
-            switchThread(newThreads[newThreads.length - 1].id);
+        try {
+          const { error } = await supabase
+            .from('chat_threads')
+            .delete()
+            .eq('id', id);
+
+          if (error) throw error;
+
+          const newThreads = threads.filter(t => t.id !== id);
+          
+          if (newThreads.length === 0) {
+            // Re-fetch to trigger initial thread creation
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              const { data: newThread } = await supabase
+                .from('chat_threads')
+                .insert({ user_id: session.user.id, file_id: targetId, title: 'Session 1' })
+                .select()
+                .single();
+              
+              if (newThread) {
+                setThreads([newThread]);
+                switchThread(newThread.id);
+              }
+            }
+          } else {
+            setThreads(newThreads);
+            if (activeThreadId === id) {
+              switchThread(newThreads[newThreads.length - 1].id);
+            }
           }
+        } catch (err) {
+          console.error('Error deleting thread:', err);
         }
       }
     }
@@ -224,15 +302,25 @@ export default function HubScreen() {
     setIsLoading(true);
 
     try {
-      const aiMsgId = Date.now();
-      setMessages(prev => [...prev, { role: 'ai', text: '', id: aiMsgId }]);
+      const aiMsgId = Date.now().toString(); // Temporary local ID
+      setMessages(prev => [...prev, { role: 'ai', text: '', id: aiMsgId as any }]);
       setIsLoading(false);
 
+      let finalAiText = '';
       await streamChat(targetId || '', text, messages, (accumulated) => {
+        finalAiText = accumulated;
         setMessages(prev => prev.map(m => 
-          m.id === aiMsgId ? { ...m, text: accumulated } : m
+          m.id === aiMsgId as any ? { ...m, text: accumulated } : m
         ));
       }, synthesis, currentImage);
+
+      // Save both messages to DB
+      if (activeThreadId) {
+        await supabase.from('chat_messages').insert([
+          { thread_id: activeThreadId, role: 'user', text, image_url: imagePreview },
+          { thread_id: activeThreadId, role: 'ai', text: finalAiText }
+        ]);
+      }
     } catch (error: any) {
       console.error('Chat error:', error);
       setIsLoading(false);
@@ -356,8 +444,8 @@ export default function HubScreen() {
               <div>
                 <h4 className="font-extrabold text-[var(--text-primary)] leading-none">Scholar AI</h4>
                 <p className="text-[10px] text-[var(--text-tertiary)] font-extrabold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  Connected to DB
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSyncingThreads || isSyncingMessages ? 'bg-amber-500 animate-spin' : 'bg-blue-500 animate-pulse'}`} />
+                  {isSyncingThreads || isSyncingMessages ? 'Syncing...' : 'Connected to DB'}
                 </p>
               </div>
             </div>
