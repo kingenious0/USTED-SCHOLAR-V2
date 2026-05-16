@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu, RefreshCw } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 import { supabase } from '../lib/supabase';
@@ -345,6 +345,22 @@ export default function HubScreen() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-[10px] font-black tracking-[0.2em] text-[var(--text-tertiary)] uppercase">Synthesis Link</p>
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <button 
+                    onClick={() => {
+                      if (!selectedFile) return;
+                      setSynthesis('');
+                      setSynthesisStage('Regenerating neural link...');
+                      // @ts-ignore
+                      generateSynthesis(selectedFile.id, (text, stage) => {
+                        if (stage) setSynthesisStage(stage);
+                        setSynthesis(text);
+                      }, true);
+                    }}
+                    className="ml-1 p-1 hover:bg-[var(--accent-primary)]/10 rounded-md text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-all flex items-center gap-1 group"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5 group-active:rotate-180 transition-transform" />
+                    <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Re-Sync</span>
+                  </button>
                 </div>
                 <h3 className="text-sm font-black text-[var(--text-primary)] truncate uppercase tracking-tight">{selectedFile?.name || 'Academic Material'}</h3>
               </div>
