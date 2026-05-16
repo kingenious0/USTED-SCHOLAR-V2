@@ -121,7 +121,8 @@ export default function AdminScreen() {
     for (let i = 1; i <= totalPages; i++) {
       setOptProgress(p => ({ ...p, current: i }));
       const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 1.5 }); // Lower resolution to save size
+      // Reduced scale from 1.5 to 1.2 for better compression
+      const viewport = page.getViewport({ scale: 1.2 }); 
       
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
@@ -130,12 +131,11 @@ export default function AdminScreen() {
 
       await page.render({ canvasContext: context!, viewport }).promise;
 
-      // Convert to 50% quality JPEG
-      const imgData = canvas.toDataURL('image/jpeg', 0.5); 
+      // Reduced quality from 0.5 to 0.4 for aggressive shrinking
+      const imgData = canvas.toDataURL('image/jpeg', 0.4); 
       
       if (i > 1) outPdf.addPage();
       
-      // A4 dimensions in mm
       const pdfWidth = outPdf.internal.pageSize.getWidth();
       const pdfHeight = outPdf.internal.pageSize.getHeight();
       outPdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
@@ -154,24 +154,34 @@ export default function AdminScreen() {
     try {
       let fileToUpload: Blob | File = file;
 
-      // --- SCANNED NOTE SNIPER (HEAVY OPTIMIZER) ---
-      // If file is larger than 10MB, we perform lossy compression
+      // --- SNIPER MODE (SMART OPTIMIZER) ---
       if (file.size > 10 * 1024 * 1024) {
         setIsOptimizing(true);
-        setUploadStatus({ type: null, message: 'Sniper Mode: Compressing scanned images... 🎯' });
+        setUploadStatus({ type: null, message: 'Sniper Mode: Hunting for bloat... 🎯' });
         
         try {
           const compressedBlob = await heavyCompress(file);
-          console.log(`✅ Sniper Success: Compressed from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`);
-          fileToUpload = compressedBlob;
+          
+          // CRITICAL FIX: Only use compressed if it's actually smaller!
+          if (compressedBlob.size < file.size) {
+            console.log(`✅ Sniper Success: Reduced from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`);
+            fileToUpload = compressedBlob;
+          } else {
+            console.log(`⚠ Sniper Aborted: Original file was already better optimized (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+            fileToUpload = file;
+          }
         } catch (compError) {
-          console.warn("Heavy compression failed, using original:", compError);
+          console.warn("Sniper failed, using original:", compError);
           fileToUpload = file;
         }
         
         setIsOptimizing(false);
       }
-      // ----------------------------------------------
+
+      // Check for Supabase 50MB Hard Limit
+      if (fileToUpload.size > 50 * 1024 * 1024) {
+        throw new Error(`File is ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB. Supabase free tier limits uploads to 50MB. Please use a smaller file.`);
+      }
 
       setUploadStatus({ type: null, message: 'Syncing with Supabase Storage...' });
       const fileExt = 'pdf'; 
