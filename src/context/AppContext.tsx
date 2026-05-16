@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 type Level = '100' | '200' | '300' | '400';
 type Semester = '1' | '2';
@@ -45,6 +46,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   
   const [selectedFile, setSelectedFile] = useState<any>(savedState.selectedFile || null);
+
+  // Supabase Auth Sync
+  useEffect(() => {
+    // 1. Initial Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+      }
+    });
+
+    // 2. Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+      } else {
+        _setUserState(prev => ({ ...prev, isLoggedIn: false }));
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Persistence Effect
   useEffect(() => {
