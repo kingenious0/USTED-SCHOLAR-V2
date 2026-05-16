@@ -19,14 +19,19 @@ export default function LandingScreen() {
   });
 
   useEffect(() => {
-    if (userState.isLoggedIn) {
-      navigate('/library', { replace: true });
-    }
-  }, [userState.isLoggedIn, navigate]);
+    // If we land here, we want to START FRESH.
+    // Kill the session so we don't get auto-bypassed.
+    supabase.auth.signOut();
+    localStorage.removeItem('pending_name');
+    localStorage.removeItem('pending_phone');
+  }, []);
 
   const handleInstantAccess = async () => {
     setLoading(true);
     try {
+      // Clear again just to be 100% sure before sign-in
+      await supabase.auth.signOut();
+      
       const { error } = await supabase.auth.signInAnonymously();
       if (error) console.error("Anonymous auth error:", error);
       

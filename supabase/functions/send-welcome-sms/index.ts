@@ -1,28 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY')
-const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME')
-const SENDER_ID = 'USTEDSCHLR'
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const { phone, name } = await req.json()
+    
+    const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY')
+    const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME')
+    const SENDER_ID = "USTEDSCHLR"
 
-    if (!WIGAL_API_KEY || !WIGAL_USERNAME) {
-      throw new Error('Missing Wigal credentials in backend')
-    }
-
-    // Ensure phone number starts with 233
+    // Format phone
     let formattedPhone = phone.replace(/\D/g, '')
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '233' + formattedPhone.substring(1)
@@ -30,40 +23,45 @@ serve(async (req) => {
       formattedPhone = '233' + formattedPhone
     }
 
-    const message = `Welcome to USTED Scholar, ${name.split(' ')[0]}! 🎓 Your AI academic workspace is ready. Let's elevate your studies!`
+    const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Let's craft excellence together. 🎓🚀`
 
-    console.log(`Sending SMS to ${formattedPhone}...`)
+    const params = new URLSearchParams({
+      username: WIGAL_USERNAME ?? '',
+      api_key: WIGAL_API_KEY ?? '',
+      sender_id: SENDER_ID,
+      dest: formattedPhone,
+      msg: message
+    });
 
-    const response = await fetch('https://frogapi.wigal.com.gh/api/v3/sms/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'USERNAME': WIGAL_USERNAME,
-        'API-KEY': WIGAL_API_KEY
-      },
-      body: JSON.stringify({
-        senderid: SENDER_ID,
-        destinations: [
-          {
-            destination: formattedPhone,
-            msgid: `WLCM_${Date.now()}`
-          }
-        ],
-        message: message,
-        smstype: 'text'
-      })
-    })
+    const wigalUrl = `https://frogapi.wigal.com.gh/v2/send_sms?${params.toString()}`
 
-    const result = await response.json()
+    console.log(`📡 Triggering Wigal for ${formattedPhone}...`)
+    
+    const response = await fetch(wigalUrl)
+    const contentType = response.headers.get("content-type")
+
+    let result;
+    if (contentType && contentType.includes("application/json")) {
+      result = await response.json()
+    } else {
+      const text = await response.text()
+      console.error('Wigal sent non-JSON response:', text)
+      throw new Error(`Wigal API Error (HTML Response): ${text.substring(0, 100)}...`)
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Final SMS Function Error:', error.message)
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      status: 'CRITICAL_FAILURE'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200, // Return 200 to keep the frontend from crashing
     })
   }
 })

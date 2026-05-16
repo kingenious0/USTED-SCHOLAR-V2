@@ -256,11 +256,14 @@ export default function AdminScreen() {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       // Update local state
       setUsers(prev => prev.filter(u => u.id !== id));
     } catch (error: any) {
-      alert(`Failed to delete user: ${error.message}`);
+      // Try to extract the real error from the response body
+      const errorMsg = error.context?.json?.error || error.message || 'Unknown error';
+      alert(`Failed to delete user: ${errorMsg}`);
     } finally {
       setDeletingUser(null);
     }

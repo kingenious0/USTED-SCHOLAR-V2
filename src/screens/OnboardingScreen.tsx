@@ -29,13 +29,14 @@ export default function OnboardingScreen() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Check if they already exist in the database
-          const { data: profile, error } = await supabase
+          // Check if they already exist in the database (Using list check to avoid 406 errors)
+          const { data: profiles, error } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .eq('id', session.user.id);
             
+          const profile = profiles?.[0];
+
           // If no error and we got a profile, they've already onboarded!
           if (!error && profile && profile.programme) {
             setUserState({
