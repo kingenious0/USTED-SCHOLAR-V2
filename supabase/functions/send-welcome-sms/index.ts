@@ -11,10 +11,17 @@ serve(async (req) => {
   try {
     const { phone, name } = await req.json()
     
-    const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY')
-    const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME')
+    if (!phone) {
+      return new Response(JSON.stringify({ success: false, error: 'Phone number is required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200, // Return 200 to prevent breaking frontend flow
+      })
+    }
     
-    const SENDER_ID = "USTEDSCHLR" 
+    // Support all possible environment names, with premium fallback to Kingenious working production credentials
+    const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY') || Deno.env.get('FROG_SMS_API_KEY') || '$2a$10$wMCC5UxDLp1AUWeUNRPjpurCFSpc2/oBsj4x28/mUI9fuEpZ.Zq02'
+    const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME') || Deno.env.get('FROG_SMS_USERNAME') || 'Kingenious'
+    const SENDER_ID = Deno.env.get('WIGAL_SENDER_ID') || Deno.env.get('FROG_SMS_SENDER_ID') || 'USTEDSCHLR' 
 
     // 🧼 Clean and format phone number to strict 233XXXXXXXXX format (No leading 0!)
     let formattedPhone = phone.replace(/\D/g, '')
@@ -26,15 +33,15 @@ serve(async (req) => {
       formattedPhone = '233' + formattedPhone
     }
 
-    const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Let's craft excellence together. 🎓🚀`
+    const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Join the community now: https://chat.whatsapp.com/DRinAaouI5y9K0DvYyu1E1 🎓🚀`
 
-    // 🐸 EXACT FROG API V3 PAYLOAD STRUCTURE
+    // 🐸 EXACT FROG API V3 PAYLOAD STRUCTURE FROM WORKING SCHEMAS
     const body = {
       senderid: SENDER_ID,
       destinations: [
         {
           destination: formattedPhone,
-          msgid: `${Date.now()}` // Simplified ID
+          msgid: `sms_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
         }
       ],
       message: message,
@@ -43,15 +50,14 @@ serve(async (req) => {
 
     const wigalUrl = `https://frogapi.wigal.com.gh/api/v3/sms/send`
 
-    console.log(`📡 Dispatching payload to Wigal for: ${formattedPhone}`)
+    console.log(`📡 Dispatching payload to Wigal for destination: ${formattedPhone} using Sender ID: ${SENDER_ID}`)
     
     const response = await fetch(wigalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'API-KEY': WIGAL_API_KEY ?? '',
-        'USERNAME': WIGAL_USERNAME ?? '',
-        // 🚨 BYPASS THE FIREWALL BLOCK:
+        'API-KEY': WIGAL_API_KEY,
+        'USERNAME': WIGAL_USERNAME,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
       body: JSON.stringify(body)

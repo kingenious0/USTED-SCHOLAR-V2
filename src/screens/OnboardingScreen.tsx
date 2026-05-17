@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronRight, GraduationCap, ArrowRight, X, Mail, Loader2
 import { ACADEMIC_DATA } from '../lib/academicData';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { sendWelcomeSMS } from '../lib/sms';
 
 export default function OnboardingScreen() {
   const { userState, setUserState } = useApp();
@@ -68,6 +69,8 @@ export default function OnboardingScreen() {
   const handleComplete = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const pendingPhone = localStorage.getItem('pending_phone') || '';
+      const pendingEmail = localStorage.getItem('pending_email') || '';
       
       if (session?.user) {
         // Save the profile to Supabase
@@ -77,10 +80,20 @@ export default function OnboardingScreen() {
           programme: selections.programme,
           level: selections.level,
           semester: selections.semester,
+          phone: pendingPhone || null,
+          email: pendingEmail || session.user.email || null,
           updated_at: new Date()
         });
         
         if (error) console.error("Error saving profile to Supabase:", error);
+
+        // 📱 SECURE WELCOME SMS DISPATCH
+        if (pendingPhone) {
+          console.log(`📱 Triggering welcome SMS to pending phone: ${pendingPhone}`);
+          sendWelcomeSMS(pendingPhone, userState.name || 'Scholar').catch((smsErr) => {
+            console.error("Welcome SMS failed to send:", smsErr);
+          });
+        }
       }
     } catch (err) {
       console.error("Profile save error:", err);
@@ -94,6 +107,12 @@ export default function OnboardingScreen() {
       level: selections.level as any,
       semester: selections.semester as any
     });
+
+    // Cleanup temporary items
+    localStorage.removeItem('pending_phone');
+    localStorage.removeItem('pending_email');
+    localStorage.removeItem('pending_name');
+
     navigate('/library', { replace: true });
   };
 
