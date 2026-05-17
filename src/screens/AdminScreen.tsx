@@ -174,7 +174,7 @@ export default function AdminScreen() {
       }
 
       // --- SNIPER MODE (SMART OPTIMIZER) ---
-      if (file.size > 48 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         setIsOptimizing(true);
         setUploadStatus({ type: null, message: 'Sniper Mode: Hunting for bloat... 🎯' });
         
@@ -455,14 +455,26 @@ export default function AdminScreen() {
                    </button>
 
                    <AnimatePresence>
-                      {uploadStatus.type && (
+                      {uploadStatus.message && (
                          <motion.div 
                            initial={{ opacity: 0, y: 10 }}
                            animate={{ opacity: 1, y: 0 }}
                            exit={{ opacity: 0 }}
-                           className={`p-4 rounded-xl flex items-center gap-3 ${uploadStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
+                           className={`p-4 rounded-xl flex items-center gap-3 border ${
+                              uploadStatus.type === 'success' 
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                : uploadStatus.type === 'error'
+                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                : 'bg-[var(--accent-primary)]/10 text-[var(--text-primary)] border-[var(--accent-primary)]/20'
+                           }`}
                          >
-                            {uploadStatus.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                            {uploadStatus.type === 'success' ? (
+                               <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                            ) : uploadStatus.type === 'error' ? (
+                               <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            ) : (
+                               <Loader2 className="w-5 h-5 animate-spin text-[var(--accent-primary)] flex-shrink-0" />
+                            )}
                             <p className="text-xs font-bold">{uploadStatus.message}</p>
                          </motion.div>
                       )}
