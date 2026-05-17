@@ -168,7 +168,7 @@ export default function AdminScreen() {
       try {
         setUploadStatus({ type: null, message: 'Extracting academic DNA... 🧬' });
         const arrayBuffer = await file.arrayBuffer();
-        extractedText = await extractTextFromPdf(arrayBuffer);
+        extractedText = await extractTextFromPdf(arrayBuffer, undefined, true);
       } catch (err) {
         console.warn("Text extraction failed, AI will rely on vision later:", err);
       }
