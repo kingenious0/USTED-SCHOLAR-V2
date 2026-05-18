@@ -49,19 +49,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Supabase Auth Sync
   useEffect(() => {
+    const syncProfile = async (userId: string) => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile && profile.programme) {
+          _setUserState(prev => ({
+            ...prev,
+            hasCompletedOnboarding: true,
+            isLoggedIn: true,
+            name: profile.name || prev.name,
+            programme: profile.programme,
+            level: profile.level,
+            semester: profile.semester
+          }));
+        }
+      } catch (err) {
+        console.error("Error syncing profile inside context:", err);
+      }
+    };
+
     // 1. Initial Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+        syncProfile(session.user.id);
       }
     });
 
     // 2. Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+        if (event === 'SIGNED_IN') {
+          syncProfile(session.user.id);
+        }
       } else {
-        _setUserState(prev => ({ ...prev, isLoggedIn: false }));
+        _setUserState(prev => ({
+          ...prev,
+          hasCompletedOnboarding: false,
+          isLoggedIn: false,
+          name: undefined,
+          avatarUrl: undefined,
+          level: undefined,
+          semester: undefined,
+          programme: undefined
+        }));
       }
     });
 

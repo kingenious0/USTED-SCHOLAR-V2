@@ -3,6 +3,7 @@ import { Shield, Bell, Palette, ChevronRight, LogOut, GraduationCap, BookOpen, C
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
+import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
   const { userState, setUserState } = useApp();
@@ -161,8 +162,18 @@ export default function ProfileScreen() {
       {/* ── Log Out & Reset ── */}
       <div className="space-y-3">
         <button
-          onClick={() => {
-            setUserState({ isLoggedIn: false });
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setUserState({
+              hasCompletedOnboarding: false,
+              isLoggedIn: false,
+              name: undefined,
+              avatarUrl: undefined,
+              level: undefined,
+              semester: undefined,
+              programme: undefined,
+              recentlyOpenedIds: []
+            });
             navigate('/');
           }}
           className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] font-bold hover:border-[var(--accent-primary)]/30 transition-all active:scale-95 text-[var(--text-primary)]"
@@ -224,8 +235,18 @@ export default function ProfileScreen() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    setUserState({ hasCompletedOnboarding: false, isLoggedIn: false, name: undefined, programme: undefined, level: undefined, semester: undefined, avatarUrl: undefined });
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setUserState({
+                      hasCompletedOnboarding: false,
+                      isLoggedIn: false,
+                      name: undefined,
+                      avatarUrl: undefined,
+                      level: undefined,
+                      semester: undefined,
+                      programme: undefined,
+                      recentlyOpenedIds: []
+                    });
                     navigate('/');
                   }}
                   className="w-full py-4 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"

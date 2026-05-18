@@ -321,6 +321,12 @@ export async function generateQuiz(fileId: string) {
     throw new Error(`Quiz Generation failed with status ${response.status}`);
   }
   const data = await response.json();
+  if (data.error) {
+    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
+  }
   return JSON.parse(data.candidates[0].content.parts[0].text);
 }
 
@@ -348,6 +354,12 @@ export async function generateFlashcards(fileId: string) {
     throw new Error(`Flashcard Generation failed with status ${response.status}`);
   }
   const data = await response.json();
+  if (data.error) {
+    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
+  }
   return JSON.parse(data.candidates[0].content.parts[0].text);
 }
 
@@ -358,16 +370,39 @@ export async function generateThreadTitle(userMessage: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
       body: JSON.stringify({
-        provider: 'cerebras',
+        provider: 'groq',
         payload: {
-          messages: [{ role: 'system', content: 'Generate a short punchy 3-5 word title for this message. No quotes.' }, { role: 'user', content: userMessage }],
-          model: 'llama3.1-8b'
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a professional thread title generator. Your ONLY task is to read the user\'s first message inside the <user_message> tag and generate a highly concise, punchy 3-5 word title summarizing what they want to discuss. \n\nCRITICAL RULE: DO NOT answer the user\'s message, DO NOT try to assist, and DO NOT ask questions. Simply output the 3-5 word title and nothing else. No quotes, no prefix.' 
+            }, 
+            { 
+              role: 'user', 
+              content: `<user_message>\n${userMessage}\n</user_message>` 
+            }
+          ],
+          model: 'llama-3.3-70b-versatile'
         }
       })
     });
+
+    if (!response.ok) throw new Error("Title generation gateway failed");
+
     const data = await response.json();
-    return data.choices[0].message.content.trim().replace(/['"]/g, '');
+    let title = data.choices[0]?.message?.content?.trim() || '';
+    
+    // Strip quotes
+    title = title.replace(/['"]/g, '');
+    
+    // Security check: If the model ignored instructions and returned a long paragraph, fallback to slicing the user message!
+    if (title.split(' ').length > 8) {
+      return userMessage.trim().slice(0, 30) + '...';
+    }
+    
+    return title || 'New Chat Session';
   } catch (e) {
-    return userMessage.slice(0, 20);
+    console.warn("Thread title generation failed, falling back to sliced message:", e);
+    return userMessage.trim().slice(0, 30) + '...';
   }
 }

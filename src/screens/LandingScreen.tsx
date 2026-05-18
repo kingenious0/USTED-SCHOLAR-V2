@@ -19,12 +19,39 @@ export default function LandingScreen() {
   });
 
   useEffect(() => {
-    // If we land here, we want to START FRESH.
-    // Kill the session so we don't get auto-bypassed.
-    supabase.auth.signOut();
-    localStorage.removeItem('pending_name');
-    localStorage.removeItem('pending_phone');
-  }, []);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // If we have a session, let's see if they already have an onboarding profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile && profile.programme) {
+          // Sync profile to userState
+          setUserState({
+            hasCompletedOnboarding: true,
+            isLoggedIn: true,
+            name: profile.name || userState.name,
+            programme: profile.programme,
+            level: profile.level,
+            semester: profile.semester
+          });
+          navigate('/library', { replace: true });
+        } else {
+          // If logged in but no onboarding profile, redirect to onboarding screen
+          navigate('/onboarding', { replace: true });
+        }
+      } else {
+        // If they are truly NOT logged in, let's clear the pending temporary state
+        localStorage.removeItem('pending_name');
+        localStorage.removeItem('pending_phone');
+      }
+    };
+    checkSession();
+  }, [navigate, setUserState]);
 
   const handleInstantAccess = async () => {
     setLoading(true);

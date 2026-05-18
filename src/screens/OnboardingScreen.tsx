@@ -33,7 +33,7 @@ export default function OnboardingScreen() {
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
             
           // If no error and we got a profile, they've already onboarded!
           if (!error && profile && profile.programme) {

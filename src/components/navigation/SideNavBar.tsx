@@ -33,7 +33,16 @@ import { motion } from 'motion/react';
 
     const handleLogout = async () => {
       await supabase.auth.signOut();
-      setUserState({ isLoggedIn: false });
+      setUserState({
+        hasCompletedOnboarding: false,
+        isLoggedIn: false,
+        name: undefined,
+        avatarUrl: undefined,
+        level: undefined,
+        semester: undefined,
+        programme: undefined,
+        recentlyOpenedIds: []
+      });
       navigate('/');
     };
 
