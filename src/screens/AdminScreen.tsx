@@ -167,64 +167,13 @@ export default function AdminScreen() {
       let fileToUpload: Blob | File = file;
       let extractedText = '';
 
-      // --- PURE TEXT EXTRACTION (PRE-SNIPER) ---
+      // --- PURE TEXT EXTRACTION (PRE-SNIPER BACKUP) ---
       try {
         setUploadStatus({ type: null, message: 'Extracting academic DNA... 🧬' });
         const arrayBuffer = await file.arrayBuffer();
         extractedText = await extractTextFromPdf(arrayBuffer, undefined, true);
-
-        // --- NATIVE OCR UPLOAD HACK: Run Gemini Vision OCR if native text is absent/scanned ---
-        if (extractedText.trim().length < 100) {
-          setUploadStatus({ type: null, message: 'Scanned PDF detected! Running Gemini Vision OCR... 👁️' });
-          const data = new Uint8Array(arrayBuffer.slice(0));
-          const pdf = await pdfjs.getDocument({ data }).promise;
-          const pagesToProcess = Math.min(pdf.numPages, 5); // Extract first 5 pages for syllabus outline
-          const parts: any[] = [{ text: "Extract all academic text from these pages. Focus on headings, key concepts, formulas, and structure. No fluff." }];
-
-          for (let i = 1; i <= pagesToProcess; i++) {
-            setUploadStatus({ type: null, message: `Analyzing scanned page ${i}/${pagesToProcess} with Gemini Vision... 👁️` });
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 1.0 }); // Reduced scale from 1.5 to 1.0 for fast processing
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            await page.render({ canvasContext: context!, viewport }).promise;
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-            parts.push({ 
-              inlineData: { 
-                mimeType: "image/jpeg", 
-                data: dataUrl.split(',')[1] 
-              } 
-            });
-          }
-
-          setUploadStatus({ type: null, message: 'Structuring academic DNA with Gemini 2.5 Flash... 🧬' });
-          const visionResponse = await fetch(GATEWAY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-            body: JSON.stringify({
-              provider: 'gemini',
-              payload: {
-                model: 'gemini-2.5-flash',
-                contents: [{ parts }]
-              }
-            })
-          });
-
-          if (!visionResponse.ok) {
-            throw new Error(`Gemini Vision OCR failed with status ${visionResponse.status}`);
-          }
-          const visionData = await visionResponse.json();
-          const extracted = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (extracted) {
-            extractedText = extracted;
-            console.log("✅ Successfully extracted scanned text via Gemini Vision on upload!");
-          }
-        }
       } catch (err: any) {
-        console.warn("Text extraction failed, using original file upload fallback:", err);
+        console.warn("Native text extraction failed, backend parser will take over:", err);
       }
 
       // --- SNIPER MODE (SMART OPTIMIZER) ---
@@ -269,6 +218,7 @@ export default function AdminScreen() {
       if (storageError) throw storageError;
 
       // 2. Insert into DB
+      const courseFileId = Math.random().toString(36).substring(2, 15);
       const { error: dbError } = await supabase
         .from('courses')
         .insert([{
@@ -278,13 +228,35 @@ export default function AdminScreen() {
           programme: programmes.length === 1 ? programmes[0] : programmes.join(','), // legacy compat
           programmes: programmes,   // new array column
           file_type: 'PDF',
-          file_id: Math.random().toString(36).substring(2, 15),
+          file_id: courseFileId,
           full_text: extractedText
         }]);
 
       if (dbError) throw dbError;
 
-      setUploadStatus({ type: 'success', message: 'Course uploaded and snipered!' });
+      // 3. SECURE BACKEND OCR INGESTION (UNSTRUCTURED.IO)
+      try {
+        setUploadStatus({ type: null, message: 'Processing document via Unstructured.io OCR... 🚀' });
+        const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
+          body: { 
+            action: 'parseDocument', 
+            fileId: courseFileId, 
+            storagePath: storageData.path 
+          }
+        });
+
+        if (parseError || parseData?.error) {
+          console.warn("Unstructured OCR Ingestion failed, using native text fallback:", parseError?.message || parseData?.error);
+          setUploadStatus({ type: 'success', message: 'Course uploaded! (Unstructured OCR bypassed, fell back to native text)' });
+        } else {
+          console.log(`✅ Unstructured OCR Ingestion Success! Processed ${parseData.characterCount} characters.`);
+          setUploadStatus({ type: 'success', message: `Course uploaded! Unstructured.io digested ${(parseData.characterCount / 1000).toFixed(1)}k characters.` });
+        }
+      } catch (ingestErr: any) {
+        console.warn("Ingestion trigger error, using native fallback:", ingestErr);
+        setUploadStatus({ type: 'success', message: 'Course uploaded! (Ingestion trigger skipped, fell back to native text)' });
+      }
+
       setName('');
       setProgrammes([]);
       setFile(null);

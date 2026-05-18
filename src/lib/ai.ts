@@ -69,7 +69,7 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   onUpdate('', 'Checking neural cache...');
   
   if (!force) {
-    let query = supabase.from('courses').select('synthesis, full_text');
+    let query = supabase.from('courses').select('synthesis, full_text, storage_path, file_id');
     if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
     else query = query.eq('file_id', fileId);
     const { data: cached } = await query.maybeSingle();
@@ -82,8 +82,33 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
     
     // If not forced, try to use full_text if available
     let textToProcess = cached?.full_text || '';
+    
+    // Dynamically resolve legacy document OCR via backend Unstructured.io if full_text is empty
+    if (!textToProcess && cached?.storage_path && cached?.file_id) {
+      onUpdate('', 'Analyzing document DNA (Heavy-Duty OCR)... 👁️');
+      try {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
+          body: { 
+            action: 'parseDocument', 
+            fileId: cached.file_id, 
+            storagePath: cached.storage_path 
+          }
+        });
+        if (!parseError && parseData?.success) {
+          let refetchQuery = supabase.from('courses').select('full_text');
+          if (isUUID(fileId)) refetchQuery = refetchQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+          else refetchQuery = refetchQuery.eq('file_id', fileId);
+          const { data: refetched } = await refetchQuery.maybeSingle();
+          textToProcess = refetched?.full_text || '';
+          console.log(`✅ Dynamically resolved legacy document OCR with ${textToProcess?.length} characters!`);
+        }
+      } catch (err) {
+        console.warn("Dynamic OCR resolution failed, falling back to local extractor:", err);
+      }
+    }
+
     if (textToProcess) {
-      const MAX_CHAR_LIMIT = 120000; // Expanded to 120k to fully utilize Cerebras Llama 3.1 131k context window
+      const MAX_CHAR_LIMIT = 400000; // Expanded to 400k to fully utilize Cerebras Llama 3.1 131k context window (128k tokens)
       let optimizedText = textToProcess;
       if (textToProcess.length > MAX_CHAR_LIMIT) {
         console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
@@ -107,57 +132,35 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   });
   
   if (!textToProcess) {
-    onUpdate('', 'Visualizing document (OCR Mode)... 👁️');
-    try {
-      const data = new Uint8Array(buffer.slice(0));
-      const pdf = await pdfjs.getDocument({ data }).promise;
-      const pagesToProcess = Math.min(pdf.numPages, 5); // Scan 5 pages for deep context
-      const parts: any[] = [{ text: "Extract all academic text from these pages. Focus on headings, key concepts, and structure. No fluff." }];
+    // Dynamically query database record info to execute backend OCR trigger
+    let query = supabase.from('courses').select('storage_path, file_id');
+    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    else query = query.eq('file_id', fileId);
+    const { data: courseInfo } = await query.maybeSingle();
 
-      for (let i = 1; i <= pagesToProcess; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context!, viewport }).promise;
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-        parts.push({ 
-          inlineData: { 
-            mimeType: "image/jpeg", 
-            data: dataUrl.split(',')[1] 
-          } 
-        });
-      }
-      
-      const visionResponse = await fetch(GATEWAY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({
-          provider: 'gemini',
-          payload: {
-            model: 'gemini-2.0-flash',
-            contents: [{ parts }]
+    if (courseInfo?.storage_path && courseInfo?.file_id) {
+      onUpdate('', 'Visualizing document (Heavy-Duty Backend OCR)... 👁️');
+      try {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
+          body: { 
+            action: 'parseDocument', 
+            fileId: courseInfo.file_id, 
+            storagePath: courseInfo.storage_path 
           }
-        })
-      });
-      if (!visionResponse.ok) {
-        throw new Error(`Vision AI failed with status ${visionResponse.status}`);
+        });
+        if (!parseError && parseData?.success) {
+          const { data: refetched } = await supabase.from('courses').select('full_text').eq('file_id', courseInfo.file_id).maybeSingle();
+          textToProcess = refetched?.full_text || '';
+          console.log(`✅ Dynamically resolved legacy document OCR during forced extraction with ${textToProcess?.length} characters!`);
+        }
+      } catch (err) {
+        console.warn("Forced dynamic OCR failed, using empty fallback:", err);
       }
-      const visionData = await visionResponse.json();
-      const extracted = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (extracted) {
-        textToProcess += extracted + "\n";
-      }
-    } catch (visionErr) {
-      console.error("Vision fallback failed:", visionErr);
     }
   }
 
   if (!textToProcess) {
-    onUpdate('### Error: PDF extraction failed.\n\nThe document appears to be empty or non-readable even with Vision AI.', 'Error');
+    onUpdate('### Error: PDF extraction failed.\n\nThe document appears to be empty or non-readable even with heavy-duty visual OCR.', 'Error');
     return;
   }
 
@@ -168,7 +171,7 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   await saveQuery;
   
   // Truncate text payload if it exceeds Cerebras context bounds
-  const MAX_CHAR_LIMIT = 120000; // Expanded to 120k to fully utilize Cerebras Llama 3.1 131k context window
+  const MAX_CHAR_LIMIT = 400000; // Expanded to 400k to fully utilize Cerebras Llama 3.1 131k context window (128k tokens)
   let optimizedText = textToProcess;
   if (textToProcess.length > MAX_CHAR_LIMIT) {
     console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
