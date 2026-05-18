@@ -83,7 +83,14 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
     // If not forced, try to use full_text if available
     let textToProcess = cached?.full_text || '';
     if (textToProcess) {
-       return await performSynthesis(fileId, textToProcess, onUpdate);
+      const MAX_CHAR_LIMIT = 120000; // Expanded to 120k to fully utilize Cerebras Llama 3.1 131k context window
+      let optimizedText = textToProcess;
+      if (textToProcess.length > MAX_CHAR_LIMIT) {
+        console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
+        optimizedText = textToProcess.substring(0, MAX_CHAR_LIMIT) + 
+          "\n\n... [Content truncated for AI token window optimization. Ask the AI assistant on the right to explain specific sections in deeper detail!] ...";
+      }
+      return await performSynthesis(fileId, optimizedText, onUpdate);
     }
   }
 
@@ -136,6 +143,9 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
           }
         })
       });
+      if (!visionResponse.ok) {
+        throw new Error(`Vision AI failed with status ${visionResponse.status}`);
+      }
       const visionData = await visionResponse.json();
       const extracted = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
       if (extracted) {
@@ -157,7 +167,16 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
   else saveQuery = saveQuery.eq('file_id', fileId);
   await saveQuery;
   
-  return await performSynthesis(fileId, textToProcess, onUpdate);
+  // Truncate text payload if it exceeds Cerebras context bounds
+  const MAX_CHAR_LIMIT = 120000; // Expanded to 120k to fully utilize Cerebras Llama 3.1 131k context window
+  let optimizedText = textToProcess;
+  if (textToProcess.length > MAX_CHAR_LIMIT) {
+    console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
+    optimizedText = textToProcess.substring(0, MAX_CHAR_LIMIT) + 
+      "\n\n... [Content truncated for AI token window optimization. Ask the AI assistant on the right to explain specific sections in deeper detail!] ...";
+  }
+
+  return await performSynthesis(fileId, optimizedText, onUpdate);
 }
 
 async function performSynthesis(fileId: string, textToProcess: string, onUpdate: (text: string, stage?: string) => void) {
@@ -178,6 +197,16 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
         }
       })
     });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      let parsedError = errText;
+      try {
+        const parsed = JSON.parse(errText);
+        parsedError = parsed.message || parsed.error || errText;
+      } catch (pe) {}
+      throw new Error(`AI Gateway Error (${response.status}): ${parsedError}`);
+    }
 
     const reader = response.body?.getReader();
     let text = '';
@@ -207,6 +236,7 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
     return final;
   } catch (e) {
     console.error('Synthesis failed:', e);
+    throw e; // Re-throw error so generateSynthesis caller receives it
   }
 }
 
@@ -236,6 +266,11 @@ export async function streamChat(fileId: string, message: string, history: any[]
       })
     });
 
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Groq Gateway Error (${response.status}): ${errText}`);
+    }
+
     const reader = response.body?.getReader();
     let text = '';
     while (true) {
@@ -255,6 +290,7 @@ export async function streamChat(fileId: string, message: string, history: any[]
     }
   } catch (e) {
     console.error('Chat failed:', e);
+    throw e;
   }
 }
 
@@ -278,6 +314,9 @@ export async function generateQuiz(fileId: string) {
       }
     })
   });
+  if (!response.ok) {
+    throw new Error(`Quiz Generation failed with status ${response.status}`);
+  }
   const data = await response.json();
   return JSON.parse(data.candidates[0].content.parts[0].text);
 }
@@ -302,6 +341,9 @@ export async function generateFlashcards(fileId: string) {
       }
     })
   });
+  if (!response.ok) {
+    throw new Error(`Flashcard Generation failed with status ${response.status}`);
+  }
   const data = await response.json();
   return JSON.parse(data.candidates[0].content.parts[0].text);
 }

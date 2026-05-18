@@ -387,15 +387,23 @@ export default function HubScreen() {
                   <p className="text-[10px] font-black tracking-[0.2em] text-[var(--text-tertiary)] uppercase">Synthesis Link</p>
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       if (!selectedFile) return;
+                      const targetId = selectedFile.file_id || selectedFile.id;
                       setSynthesis('');
+                      setIsSynthesizing(true);
                       setSynthesisStage('Regenerating neural link...');
-                      // @ts-ignore
-                      generateSynthesis(selectedFile.id, (text, stage) => {
-                        if (stage) setSynthesisStage(stage);
-                        setSynthesis(text);
-                      }, true);
+                      try {
+                        await generateSynthesis(targetId, (text, stage) => {
+                          if (stage) setSynthesisStage(stage);
+                          setSynthesis(text);
+                        }, true);
+                      } catch (error: any) {
+                        console.error('Re-Sync Synthesis error:', error);
+                        setSynthesis(`### AI Synthesis Unavailable\n\n${error?.message || 'Check your internet and try again.'}`);
+                      } finally {
+                        setIsSynthesizing(false);
+                      }
                     }}
                     className="ml-1 p-1 hover:bg-[var(--accent-primary)]/10 rounded-md text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-all flex items-center gap-1 group"
                   >

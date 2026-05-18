@@ -8,6 +8,9 @@ import { extractTextFromPdf } from '../lib/pdfUtils';
 import * as pdfjs from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 
+const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export default function AdminScreen() {
   const [loading, setLoading] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -169,8 +172,59 @@ export default function AdminScreen() {
         setUploadStatus({ type: null, message: 'Extracting academic DNA... 🧬' });
         const arrayBuffer = await file.arrayBuffer();
         extractedText = await extractTextFromPdf(arrayBuffer, undefined, true);
-      } catch (err) {
-        console.warn("Text extraction failed, AI will rely on vision later:", err);
+
+        // --- NATIVE OCR UPLOAD HACK: Run Gemini Vision OCR if native text is absent/scanned ---
+        if (extractedText.trim().length < 100) {
+          setUploadStatus({ type: null, message: 'Scanned PDF detected! Running Gemini Vision OCR... 👁️' });
+          const data = new Uint8Array(arrayBuffer.slice(0));
+          const pdf = await pdfjs.getDocument({ data }).promise;
+          const pagesToProcess = Math.min(pdf.numPages, 5); // Extract first 5 pages for syllabus outline
+          const parts: any[] = [{ text: "Extract all academic text from these pages. Focus on headings, key concepts, formulas, and structure. No fluff." }];
+
+          for (let i = 1; i <= pagesToProcess; i++) {
+            setUploadStatus({ type: null, message: `Analyzing scanned page ${i}/${pagesToProcess} with Gemini Vision... 👁️` });
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.0 }); // Reduced scale from 1.5 to 1.0 for fast processing
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: context!, viewport }).promise;
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            parts.push({ 
+              inlineData: { 
+                mimeType: "image/jpeg", 
+                data: dataUrl.split(',')[1] 
+              } 
+            });
+          }
+
+          setUploadStatus({ type: null, message: 'Structuring academic DNA with Gemini 2.5 Flash... 🧬' });
+          const visionResponse = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+            body: JSON.stringify({
+              provider: 'gemini',
+              payload: {
+                model: 'gemini-2.5-flash',
+                contents: [{ parts }]
+              }
+            })
+          });
+
+          if (!visionResponse.ok) {
+            throw new Error(`Gemini Vision OCR failed with status ${visionResponse.status}`);
+          }
+          const visionData = await visionResponse.json();
+          const extracted = visionData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (extracted) {
+            extractedText = extracted;
+            console.log("✅ Successfully extracted scanned text via Gemini Vision on upload!");
+          }
+        }
+      } catch (err: any) {
+        console.warn("Text extraction failed, using original file upload fallback:", err);
       }
 
       // --- SNIPER MODE (SMART OPTIMIZER) ---
