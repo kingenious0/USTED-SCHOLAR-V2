@@ -213,7 +213,8 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'cerebras', model: 'llama3.1-70b' },
+    { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' }
@@ -434,6 +435,8 @@ export async function streamChat(fileId: string, message: string, history: any[]
     } else {
       const attempts = [
         { provider: 'cerebras', model: 'llama-3.3-70b' },
+        { provider: 'cerebras', model: 'llama3.1-70b' },
+        { provider: 'cerebras', model: 'llama3.1-8b' },
         { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
         { provider: 'groq', model: 'llama-3.3-70b-versatile' }
       ];
@@ -560,6 +563,8 @@ export async function generateQuiz(fileId: string) {
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'cerebras', model: 'llama3.1-70b' },
+    { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' }
@@ -669,6 +674,8 @@ export async function generateFlashcards(fileId: string) {
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'cerebras', model: 'llama3.1-70b' },
+    { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' }
