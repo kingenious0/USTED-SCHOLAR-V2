@@ -18,11 +18,11 @@ export default function HubScreen() {
   const [activeThreadId, setActiveThreadId] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [synthesis, setSynthesis] = useState('');
+  const [synthesis, setSynthesis] = useState(selectedFile?.synthesis || '');
   const [activeTab, setActiveTab] = useState<'synthesis' | 'chat'>('synthesis');
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(!selectedFile?.synthesis);
   const [errorCooldown, setErrorCooldown] = useState(0);
-  const [synthesisStage, setSynthesisStage] = useState('');
+  const [synthesisStage, setSynthesisStage] = useState(selectedFile?.synthesis ? 'Ready' : 'Checking neural cache...');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSyncingThreads, setIsSyncingThreads] = useState(false);
@@ -296,6 +296,14 @@ export default function HubScreen() {
         return;
       }
 
+      // Fast-path: If synthesis is already loaded in our selection context, load instantly with 0ms loading time!
+      if (selectedFile?.synthesis) {
+        setSynthesis(selectedFile.synthesis);
+        setIsSynthesizing(false);
+        setSynthesisStage('Ready');
+        return;
+      }
+
       setIsSynthesizing(true);
       setSynthesisStage('Checking neural cache...');
       try {
@@ -315,7 +323,7 @@ export default function HubScreen() {
       }
     }
     fetchSynthesis();
-  }, [targetId]);
+  }, [targetId, selectedFile]);
 
   useEffect(() => {
     if (errorCooldown > 0) {
