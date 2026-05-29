@@ -504,56 +504,6 @@ export default function HubScreen() {
                 >
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{synthesis}</ReactMarkdown>
                 </motion.div>
-
-                {/* PREMIUM STUDY CENTER TOOLBAR (Fitts's Law Cards) */}
-                <div className="border-t border-[var(--border-color)] pt-8 mt-12">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-tertiary)] mb-4">Study Center</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    
-                    {/* Summary Button */}
-                    <button
-                      onClick={() => {
-                        setActiveTab('chat');
-                        handleSend("Summarize the key concepts of this section in bullet points.");
-                      }}
-                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-electric-blue/5 hover:border-electric-blue/20 group cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-electric-blue/5 blur-xl rounded-full pointer-events-none group-hover:bg-electric-blue/10 transition-colors" />
-                      <div className="w-10 h-10 rounded-xl bg-electric-blue/10 text-electric-blue flex items-center justify-center mb-4 group-hover:bg-electric-blue group-hover:text-white transition-all duration-300">
-                        <BookOpen className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Read Summary</h5>
-                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">AI Bullet Points</p>
-                    </button>
-
-                    {/* Flashcard Deck Button */}
-                    <Link
-                      to="/flashcards"
-                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-sunset-orange/5 hover:border-sunset-orange/20 group cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-sunset-orange/5 blur-xl rounded-full pointer-events-none group-hover:bg-sunset-orange/10 transition-colors" />
-                      <div className="w-10 h-10 rounded-xl bg-sunset-orange/10 text-sunset-orange flex items-center justify-center mb-4 group-hover:bg-sunset-orange group-hover:text-white transition-all duration-300">
-                        <Layers className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Study Deck</h5>
-                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">15 Active Cards</p>
-                    </Link>
-
-                    {/* Quiz Button */}
-                    <Link
-                      to="/quiz"
-                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20 group cursor-pointer relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-xl rounded-full pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                        <Award className="w-5 h-5" />
-                      </div>
-                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Start Test</h5>
-                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">5 Academic MCQs</p>
-                    </Link>
-
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full py-32 text-center">
@@ -566,6 +516,49 @@ export default function HubScreen() {
             )}
           </div>
         </div>
+
+        {/* Sticky Study Center Toolbar (Fitts's Law Cards) */}
+        {synthesis && (
+          <div className="p-4 bg-[var(--bg-primary)] border-t border-[var(--border-color)] relative z-30">
+            <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <div className="hidden md:block">
+                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Study Center</h4>
+                <p className="text-[8px] text-zinc-500 font-bold uppercase mt-0.5">Academic Toolkit</p>
+              </div>
+              <div className="flex-1 flex gap-3">
+                {/* Summary Button */}
+                <button
+                  onClick={() => {
+                    setActiveTab('chat');
+                    handleSend("Summarize the key concepts of this section in bullet points.");
+                  }}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-electric-blue/5 hover:border-electric-blue/20 group cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4 text-electric-blue group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-primary)]">Summary</span>
+                </button>
+
+                {/* Flashcard Deck Button */}
+                <Link
+                  to="/flashcards"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-sunset-orange/5 hover:border-sunset-orange/20 group cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Layers className="w-4 h-4 text-sunset-orange group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-primary)]">Flashcards</span>
+                </Link>
+
+                {/* Quiz Button */}
+                <Link
+                  to="/quiz"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20 group cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Award className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-primary)]">Take Quiz</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Right: AI Assistant */}
