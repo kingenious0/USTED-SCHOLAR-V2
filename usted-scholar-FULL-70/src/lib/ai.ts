@@ -2,259 +2,547 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from './supabase';
 import Groq from 'groq-sdk';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
+import { extractTextFromPdf } from './pdfUtils';
 import * as pdfjs from 'pdfjs-dist';
 
-// Configure PDF.js Worker (Vite-compatible local worker)
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
 
-// Multi-Key Management
-const API_KEYS = [
-  import.meta.env.VITE_GEMINI_1_API_KEY,
-  import.meta.env.VITE_GEMINI_2_API_KEY,
-  import.meta.env.VITE_GEMINI_3_API_KEY,
-  import.meta.env.VITE_GEMINI_4_API_KEY
-].filter(Boolean);
-
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const CEREBRAS_API_KEY = import.meta.env.VITE_CEREBRAS_API_KEY;
-
-let currentKeyIndex = 0;
-
-// Helper: UUID Validation
-const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-// Helper: Extract Text from PDF (SILENT EXTRACTION)
-async function extractTextFromPdf(pdfBuffer: ArrayBuffer): Promise<string> {
-  try {
-    // Use a slice to avoid detaching the main buffer
-    const loadingTask = pdfjs.getDocument({ data: pdfBuffer.slice(0) });
-    const pdf = await loadingTask.promise;
-    let fullText = '';
-    
-    console.log(`📄 PDF Extraction: Starting for ${pdf.numPages} pages...`);
-    for (let i = 1; i <= Math.min(pdf.numPages, 100); i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const strings = content.items.map((item: any) => item.str);
-      fullText += strings.join(' ') + '\n';
-      if (fullText.length > 150000) break;
-    }
-    
-    const trimmed = fullText.trim();
-    console.log(`📄 PDF Extraction: Found ${trimmed.length} characters.`);
-    return trimmed;
-  } catch (e) {
-    console.error('PDF Extraction Error:', e);
-    return '';
-  }
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 }
 
-// Helper: Fetch PDF from Supabase Storage
+// Anti-AI Persona & Constraints
+const SYNTHESIS_PERSONA = `Act as a Senior Academic Mentor. Use a concise, high-signal, low-noise writing style.
+CRITICAL CONSTRAINTS:
+1. Strictly Avoid words like: delve, pivotal, comprehensive, transformative, multi-faceted, or underscores.
+2. Zero-Intro: DO NOT include introductory phrases or meta-talk like 'Here is a synthesis...', 'According to the document...', or 'Structure by units...'. Start directly with the first heading (e.g. '# Network Fundamentals'). No fluff, no apologies, no summaries of the synthesis process.
+3. Formatting: Use bolding for key terms only. Use short bullet points.
+4. Tone: Direct, technical, and slightly informal—like a senior student explaining a concept to a junior over coffee.
+5. Language: Use standard English, but feel free to use Ghanaian academic context where relevant (e.g., mentioning 'Mid-sem' or 'End-of-sem').`;
+
+const CHAT_PERSONA = `Act as a Senior Academic Mentor named USTED Scholar AI. Use a concise, high-signal, low-noise writing style.
+CRITICAL CONSTRAINTS:
+1. Tone: Direct, technical, and friendly—like a senior student explaining a concept to a junior over coffee.
+2. Language: Use standard English, but feel free to use Ghanaian academic context where relevant (e.g., mentioning 'Mid-sem' or 'End-of-sem').
+3. You are a conversational assistant. Reply directly to the user's chat messages. If they greet you, greet them back naturally. Do NOT output a full academic synthesis unless explicitly asked to summarize.
+4. Avoid generic AI fluff, apologies, or robotic phrasing. Keep answers highly relevant to the context.`;
+
+function cleanAIText(text: string) {
+  const patterns = [
+    /^Here is a synthesis.*?\n/i,
+    /^Based on the document.*?\n/i,
+    /^This document appears to be.*?\n/i,
+    /^Here is the.*?\n/i,
+    /^Sure,.*?\n/i,
+    /^Certainly,.*?\n/i,
+    /^Okay,.*?\n/i
+  ];
+  let cleaned = text.trimStart();
+  patterns.forEach(p => cleaned = cleaned.replace(p, '').trimStart());
+  return cleaned;
+}
+
+const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 async function fetchPdfBufferFromStorage(fileId: string): Promise<ArrayBuffer | null> {
   try {
-    console.log('🔍 Diagnostic: Fetching path for ID:', fileId);
-    let query = supabase.from('courses').select('storage_path, name');
-    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-    else query = query.eq('file_id', fileId);
-
-    const { data: course, error: dbError } = await query.maybeSingle();
-    if (dbError || !course?.storage_path) {
-      console.error('❌ DB Error or Missing Path:', dbError, course);
-      return null;
-    }
-
-    const rawPath = course.storage_path;
-    console.log('📡 Attempting Download:', rawPath);
+    let query = supabase.from('courses').select('storage_path');
     
-    const { data, error: storageError } = await supabase.storage
-      .from('course-materials')
-      .download(rawPath);
-
-    if (storageError && (storageError as any).status === 400) {
-      console.log('🔍 Deep Hunter: Searching for misplaced file...');
-      const fileName = rawPath.split('/').pop() || '';
-      
-      // Try listing root folders to see what exists
-      const { data: rootItems } = await supabase.storage.from('course-materials').list('');
-      console.log('📂 Folders found in Storage:', rootItems?.map(f => `"${f.name}"`).join(', '));
-
-      if (rootItems) {
-        for (const folder of rootItems) {
-          const { data: folderFiles } = await supabase.storage
-            .from('course-materials')
-            .list(folder.name);
-
-          const match = folderFiles?.find(f => 
-            f.name.toLowerCase().trim() === fileName.toLowerCase().trim()
-          );
-
-          if (match) {
-            const correctedPath = `${folder.name}/${match.name}`;
-            console.log('✅ Deep Hunter: Found match in folder:', correctedPath);
-            const { data: retryData } = await supabase.storage
-              .from('course-materials')
-              .download(correctedPath);
-            if (retryData) return await retryData.arrayBuffer();
-          }
-        }
-      }
+    if (isUUID(fileId)) {
+      query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    } else {
+      // If not a UUID, it's definitely a file_id string
+      query = query.eq('file_id', fileId);
     }
-
-    if (storageError) {
-      console.error('❌ Supabase Storage Error:', storageError.message);
-      return null;
-    }
-
-    if (!data) return null;
-    return await data.arrayBuffer();
+    
+    // Always get the latest upload
+    const { data: courses } = await query.order('created_at', { ascending: false });
+    const course = courses?.[0];
+    
+    if (!course?.storage_path) return null;
+    const { data } = await supabase.storage.from('course-materials').download(course.storage_path);
+    return data ? await data.arrayBuffer() : null;
   } catch (e) {
     return null;
   }
 }
 
 // Service: Generate Synthesis
-export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void) {
+export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void, force: boolean = false) {
+  console.log("🧬 generateSynthesis: ENTERED for fileId:", fileId, "force:", force);
   onUpdate('', 'Checking neural cache...');
-  let query = supabase.from('courses').select('synthesis, full_text');
-  if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-  else query = query.eq('file_id', fileId);
-  const { data: cached } = await query.maybeSingle();
+  
+  if (!force) {
+    let query = supabase.from('courses').select('synthesis, full_text, storage_path, file_id');
+    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    else query = query.eq('file_id', fileId);
+    
+    console.log("🧬 generateSynthesis: Querying Supabase courses table for cache...");
+    const { data: cached, error: queryError } = await query.maybeSingle();
 
-  if (cached?.synthesis) {
-    onUpdate(cached.synthesis, 'Ready');
-    return cached.synthesis;
+    if (queryError) {
+      console.error("🧬 generateSynthesis: Supabase query error:", queryError.message);
+      throw queryError;
+    }
+
+    console.log("🧬 generateSynthesis: Supabase query result:", cached);
+
+    if (cached?.synthesis) {
+      console.log("🧬 generateSynthesis: FOUND CACHED SYNTHESIS! Clean cache and update.");
+      const cleanedCache = cleanAIText(cached.synthesis);
+      onUpdate(cleanedCache, 'Ready');
+      return cleanedCache;
+    }
+    
+    // If not forced, try to use full_text if available
+    let textToProcess = cached?.full_text || '';
+    console.log("🧬 generateSynthesis: No cached synthesis found. Text to process length:", textToProcess.length);
+    
+    // Dynamically resolve legacy document OCR via backend Unstructured.io if full_text is empty
+    if (!textToProcess && cached?.storage_path && cached?.file_id) {
+      console.log("🧬 generateSynthesis: Text is empty, triggering dynamic backend OCR fallback...");
+      onUpdate('', 'Analyzing document DNA (Heavy-Duty OCR)... 👁️');
+      try {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
+          body: { 
+            action: 'parseDocument', 
+            fileId: cached.file_id, 
+            storagePath: cached.storage_path 
+          }
+        });
+        if (!parseError && parseData?.success) {
+          let refetchQuery = supabase.from('courses').select('full_text');
+          if (isUUID(fileId)) refetchQuery = refetchQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+          else refetchQuery = refetchQuery.eq('file_id', fileId);
+          const { data: refetched } = await refetchQuery.maybeSingle();
+          textToProcess = refetched?.full_text || '';
+          console.log(`✅ Dynamically resolved legacy document OCR with ${textToProcess?.length} characters!`);
+        } else {
+          console.warn("🧬 generateSynthesis: Backend OCR invocation finished with error:", parseError || parseData?.error);
+        }
+      } catch (err) {
+        console.warn("Dynamic OCR resolution failed, falling back to local extractor:", err);
+      }
+    }
+
+    if (textToProcess) {
+      const MAX_CHAR_LIMIT = 400000; // Expanded to 400k to fully utilize Cerebras Llama 3.1 131k context window (128k tokens)
+      let optimizedText = textToProcess;
+      if (textToProcess.length > MAX_CHAR_LIMIT) {
+        console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
+        optimizedText = textToProcess.substring(0, MAX_CHAR_LIMIT) + 
+          "\n\n... [Content truncated for AI token window optimization. Ask the AI assistant on the right to explain specific sections in deeper detail!] ...";
+      }
+      console.log("🧬 generateSynthesis: Text found! Dispatched to performSynthesis...");
+      return await performSynthesis(fileId, optimizedText, onUpdate);
+    } else {
+      console.log("🧬 generateSynthesis: No text found in cache. Proceeding to force extraction/download...");
+    }
   }
 
-  let textToProcess = cached?.full_text || '';
-  let mainBuffer: ArrayBuffer | null = null;
+  // Force extraction or no cache found
+  console.log("🧬 generateSynthesis: Initiating forced/manual extraction from Storage...");
+  onUpdate('', 'Extracting text...');
+  const buffer = await fetchPdfBufferFromStorage(fileId);
+  if (!buffer) {
+    console.error("🧬 generateSynthesis: fetchPdfBufferFromStorage returned null. Could not read storage.");
+    onUpdate('### Error: Could not reach document storage.', 'Error');
+    return;
+  }
+
+  let textToProcess = await extractTextFromPdf(buffer, (page, total) => {
+    onUpdate('', `Reading Page ${page}/${total}... 👁️`);
+  });
+  
+  if (!textToProcess) {
+    // Dynamically query database record info to execute backend OCR trigger
+    let query = supabase.from('courses').select('storage_path, file_id');
+    if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+    else query = query.eq('file_id', fileId);
+    const { data: courseInfo } = await query.maybeSingle();
+
+    if (courseInfo?.storage_path && courseInfo?.file_id) {
+      onUpdate('', 'Visualizing document (Heavy-Duty Backend OCR)... 👁️');
+      try {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
+          body: { 
+            action: 'parseDocument', 
+            fileId: courseInfo.file_id, 
+            storagePath: courseInfo.storage_path 
+          }
+        });
+        if (!parseError && parseData?.success) {
+          const { data: refetched } = await supabase.from('courses').select('full_text').eq('file_id', courseInfo.file_id).maybeSingle();
+          textToProcess = refetched?.full_text || '';
+          console.log(`✅ Dynamically resolved legacy document OCR during forced extraction with ${textToProcess?.length} characters!`);
+        }
+      } catch (err) {
+        console.warn("Forced dynamic OCR failed, using empty fallback:", err);
+      }
+    }
+  }
 
   if (!textToProcess) {
-    onUpdate('', 'Silently extracting text...');
-    mainBuffer = await fetchPdfBufferFromStorage(fileId);
-    if (mainBuffer) {
-      textToProcess = await extractTextFromPdf(mainBuffer);
-      if (textToProcess) {
-        let updateQuery = supabase.from('courses').update({ full_text: textToProcess });
-        if (isUUID(fileId)) updateQuery = updateQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-        else updateQuery = updateQuery.eq('file_id', fileId);
-        await updateQuery;
-      }
-    }
+    onUpdate('### Error: PDF extraction failed.\n\nThe document appears to be empty or non-readable even with heavy-duty visual OCR.', 'Error');
+    return;
   }
 
-  // --- TRACK 1: CEREBRAS (TEXT) ---
-  if (textToProcess && CEREBRAS_API_KEY && CEREBRAS_API_KEY !== 'your_cerebras_api_key_here') {
-    onUpdate('', 'Cerebras 70B Synthesis...');
-    try {
-      const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
-      const completion = await client.chat.completions.create({
-        messages: [
-          { role: 'system', content: 'You are the USTED Scholar AI. Create a deep academic synthesis in Markdown. Focus on key definitions.' },
-          { role: 'user', content: textToProcess }
-        ],
-        model: 'llama3.1-8b', // SWAPPED to user-available 8B model
-        stream: true,
-      });
-
-      let text = '';
-      for await (const chunk of completion) {
-        text += chunk.choices[0]?.delta?.content || '';
-        onUpdate(text, 'Writing...');
-      }
-
-      let updateQuery = supabase.from('courses').update({ synthesis: text });
-      if (isUUID(fileId)) updateQuery = updateQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-      else updateQuery = updateQuery.eq('file_id', fileId);
-      await updateQuery;
-      return text;
-    } catch (e) {
-      console.warn('Cerebras failed, falling back...');
-    }
+  // Save the extracted text for future use
+  let saveQuery = supabase.from('courses').update({ full_text: textToProcess });
+  if (isUUID(fileId)) saveQuery = saveQuery.eq('id', fileId);
+  else saveQuery = saveQuery.eq('file_id', fileId);
+  await saveQuery;
+  
+  // Truncate text payload if it exceeds Cerebras context bounds
+  const MAX_CHAR_LIMIT = 400000; // Expanded to 400k to fully utilize Cerebras Llama 3.1 131k context window (128k tokens)
+  let optimizedText = textToProcess;
+  if (textToProcess.length > MAX_CHAR_LIMIT) {
+    console.warn(`✂️ Optimizing text payload from ${textToProcess.length} to ${MAX_CHAR_LIMIT} chars for Cerebras context limits.`);
+    optimizedText = textToProcess.substring(0, MAX_CHAR_LIMIT) + 
+      "\n\n... [Content truncated for AI token window optimization. Ask the AI assistant on the right to explain specific sections in deeper detail!] ...";
   }
 
-  // --- TRACK 2: GEMINI (OCR / FALLBACK) ---
-  onUpdate('', 'Gemini Neural Vision (OCR)...');
-  for (let k = 0; k < API_KEYS.length; k++) {
-    const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
-    try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' }); // Use 1.5 for better Vision/OCR
-      let prompt: any[] = [];
-
-      if (textToProcess) {
-        prompt.push({ text: `Context: ${textToProcess}\n\nSynthesize this academic document.` });
-      } else {
-        if (!mainBuffer) mainBuffer = await fetchPdfBufferFromStorage(fileId);
-        if (!mainBuffer) throw new Error('File download failed.');
-        
-        // Pass a copy to avoid detachment
-        const base64 = btoa(new Uint8Array(mainBuffer.slice(0)).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-        prompt.push({ inlineData: { data: base64, mimeType: 'application/pdf' } });
-        prompt.push({ text: 'Synthesize this document (OCR mode).' });
-      }
-
-      const result = await model.generateContentStream(prompt);
-      let text = '';
-      for await (const chunk of result.stream) {
-        text += chunk.text();
-        onUpdate(text, 'Writing...');
-      }
-
-      let updateQuery = supabase.from('courses').update({ synthesis: text });
-      if (isUUID(fileId)) updateQuery = updateQuery.or(`id.eq.${fileId},file_id.eq.${fileId}`);
-      else updateQuery = updateQuery.eq('file_id', fileId);
-      await updateQuery;
-      return text;
-    } catch (error: any) {
-      if (error.message?.includes('429')) {
-        currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-        continue;
-      }
-      throw error;
-    }
-  }
+  return await performSynthesis(fileId, optimizedText, onUpdate);
 }
 
-// Service: Chat with Document
-export async function streamChat(fileId: string, message: string, history: any[], onUpdate: (text: string) => void) {
+async function performSynthesis(fileId: string, textToProcess: string, onUpdate: (text: string, stage?: string) => void) {
+  console.log("🧬 performSynthesis: ENTERED for fileId:", fileId, "text length:", textToProcess.length);
+  onUpdate('', 'Secure AI Synthesis...');
+
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧬 performSynthesis: Attempting synthesis via ${attempt.provider} (Model: ${attempt.model})...`);
+      const headers = await authHeaders();
+      console.log("🧬 performSynthesis: Authorization headers retrieved. Token length:", headers['Authorization']?.length);
+
+      // Structure payload dynamically based on provider API requirements (OpenAI vs Google Gemini)
+      let bodyPayload: any = {};
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            stream: true,
+            contents: [
+              { role: 'user', parts: [{ text: textToProcess }] }
+            ],
+            system_instruction: {
+              parts: [{ text: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` }]
+            }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { role: 'system', content: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` },
+              { role: 'user', content: textToProcess }
+            ],
+            model: attempt.model,
+            stream: true
+          }
+        };
+      }
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(bodyPayload)
+      });
+
+      console.log(`🧬 performSynthesis: ${attempt.provider} gateway response status:`, response.status, response.statusText);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`${attempt.provider} gateway HTTP error: ${errText}`);
+      }
+
+      const reader = response.body?.getReader();
+      let text = '';
+      let isFirstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+        const chunk = new TextDecoder().decode(value);
+        console.log(`🧬 performSynthesis: Chunk received from ${attempt.provider}:`, chunk.slice(0, 150) + (chunk.length > 150 ? '...' : ''));
+
+        // Check for stream-level errors wrapped inside a 200 HTTP code (like Cerebras' model_not_found or Groq's rate limit)
+        if (isFirstChunk) {
+          isFirstChunk = false;
+          if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
+            throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+          }
+        }
+
+        if (attempt.provider === 'gemini') {
+          // Robust JSON regex parsing for Gemini stream chunk candidates
+          const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+          for (const match of matches) {
+            try {
+              text += JSON.parse(`"${match[1]}"`);
+            } catch (e) {}
+          }
+          onUpdate(cleanAIText(text), 'Writing...');
+        } else {
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                let content = data.choices?.[0]?.delta?.content || '';
+                text += content;
+                onUpdate(cleanAIText(text), 'Writing...');
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      const final = cleanAIText(text);
+      if (!final || final.trim().length === 0) {
+        throw new Error(`Empty synthesis text returned from ${attempt.provider}`);
+      }
+
+      console.log(`🧬 performSynthesis: SUCCESS! Synthesis generated successfully using ${attempt.provider}.`);
+
+      // Save the synthesis to the DB
+      let updateQuery = supabase.from('courses').update({ synthesis: final });
+      if (isUUID(fileId)) updateQuery = updateQuery.eq('id', fileId);
+      else updateQuery = updateQuery.eq('file_id', fileId);
+      await updateQuery;
+
+      return final;
+
+    } catch (err: any) {
+      console.error(`🧬 performSynthesis: ${attempt.provider} attempt FAILED:`, err.message);
+      lastError = err;
+      // Loop continues to the next provider (Groq)
+    }
+  }
+
+  // If we reach here, all providers have failed
+  throw new Error(`All synthesis providers failed. Last error: ${lastError?.message}`);
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Service: Chat with Document (supports images via Gemini)
+export async function streamChat(fileId: string, message: string, history: any[], onUpdate: (text: string) => void, synthesisContext?: string, imageFile?: File | null) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
   else query = query.eq('file_id', fileId);
   const { data: cached } = await query.maybeSingle();
   const systemContext = cached?.full_text || cached?.synthesis || '';
 
-  if (GROQ_API_KEY && GROQ_API_KEY !== 'your_groq_api_key_here') {
-    try {
-      const groq = new Groq({ apiKey: GROQ_API_KEY, dangerouslyAllowBrowser: true });
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [
-          { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}` },
-          ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
-          { role: 'user', content: message }
-        ],
-        model: 'llama-3.3-70b-versatile',
-        stream: true,
-      });
-      let accumulated = '';
-      for await (const chunk of chatCompletion) {
-        accumulated += chunk.choices[0]?.delta?.content || '';
-        onUpdate(accumulated);
-      }
-      return;
-    } catch (e) {}
-  }
+  try {
+    const hasImage = !!imageFile;
 
-  const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-  const contents = history.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
-  contents.push({ role: 'user', parts: [{ text: message }] });
-  const result = await model.generateContentStream({ contents });
-  let text = '';
-  for await (const chunk of result.stream) {
-    text += chunk.text();
-    onUpdate(text);
+    if (hasImage) {
+      const base64 = await fileToBase64(imageFile!);
+      const imageMime = imageFile!.type || 'image/png';
+
+      const contents: any[] = history.map(m => ({
+        role: m.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: m.text || '' }]
+      }));
+      contents.push({
+        role: 'user',
+        parts: [
+          { text: message },
+          { inline_data: { mime_type: imageMime, data: base64 } }
+        ]
+      });
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({
+          provider: 'gemini',
+          payload: {
+            model: 'gemini-2.5-flash-lite',
+            stream: true,
+            contents,
+            system_instruction: {
+              parts: [{ text: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` }]
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini Vision Error (${response.status}): ${errText}`);
+      }
+
+      const reader = response.body?.getReader();
+      let text = '';
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+        const chunk = new TextDecoder().decode(value);
+        
+        // Parse Gemini chunks using both standard SSE and robust regex fallback
+        const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+        let hasMatches = false;
+        for (const match of matches) {
+          try {
+            text += JSON.parse(`"${match[1]}"`);
+            hasMatches = true;
+          } catch (e) {}
+        }
+        
+        if (hasMatches) {
+          onUpdate(cleanAIText(text));
+        } else {
+          // Standard SSE fallback
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                text += data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                onUpdate(cleanAIText(text));
+              } catch (e) {}
+            }
+          }
+        }
+      }
+    } else {
+      const attempts = [
+        { provider: 'cerebras', model: 'llama-3.3-70b' },
+        { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+        { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+      ];
+
+      let lastError: any = null;
+      for (const attempt of attempts) {
+        try {
+          console.log(`🧬 streamChat: Attempting chat via ${attempt.provider} (Model: ${attempt.model})...`);
+          
+          let bodyPayload: any = {};
+          if (attempt.provider === 'gemini') {
+            bodyPayload = {
+              provider: 'gemini',
+              payload: {
+                model: attempt.model,
+                stream: true,
+                contents: [
+                  ...history.map(m => ({
+                    role: m.role === 'ai' ? 'model' : 'user',
+                    parts: [{ text: m.text || '' }]
+                  })),
+                  { role: 'user', parts: [{ text: message }] }
+                ],
+                system_instruction: {
+                  parts: [{ text: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` }]
+                }
+              }
+            };
+          } else {
+            bodyPayload = {
+              provider: attempt.provider,
+              payload: {
+                messages: [
+                  { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` },
+                  ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+                  { role: 'user', content: message }
+                ],
+                model: attempt.model,
+                stream: true
+              }
+            };
+          }
+
+          const response = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            headers: await authHeaders(),
+            body: JSON.stringify(bodyPayload)
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`${attempt.provider} gateway HTTP error: ${errText}`);
+          }
+
+          const reader = response.body?.getReader();
+          let text = '';
+          let isFirstChunk = true;
+
+          while (true) {
+            const { done, value } = await reader!.read();
+            if (done) break;
+            const chunk = new TextDecoder().decode(value);
+
+            // Stream-level error interceptor
+            if (isFirstChunk) {
+              isFirstChunk = false;
+              if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
+                throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+              }
+            }
+
+            if (attempt.provider === 'gemini') {
+              const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+              for (const match of matches) {
+                try {
+                  text += JSON.parse(`"${match[1]}"`);
+                } catch (e) {}
+              }
+              onUpdate(cleanAIText(text));
+            } else {
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    text += data.choices?.[0]?.delta?.content || '';
+                    onUpdate(cleanAIText(text));
+                  } catch (e) {}
+                }
+              }
+            }
+          }
+
+          if (text.trim().length > 0) {
+            return;
+          }
+          throw new Error(`Empty stream response returned from ${attempt.provider}`);
+
+        } catch (err: any) {
+          console.warn(`🧬 streamChat: ${attempt.provider} attempt FAILED:`, err.message);
+          lastError = err;
+        }
+      }
+
+      throw new Error(`All chat providers failed. Last error: ${lastError?.message}`);
+    }
+  } catch (e) {
+    console.error('Chat failed:', e);
+    throw e;
   }
 }
 
@@ -263,27 +551,116 @@ export async function generateQuiz(fileId: string) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
   else query = query.eq('file_id', fileId);
-  const { data: cached } = await query.single();
+  const { data: cached } = await query.maybeSingle();
   const context = cached?.full_text || cached?.synthesis || '';
 
-  if (CEREBRAS_API_KEY && CEREBRAS_API_KEY !== 'your_cerebras_api_key_here') {
-    try {
-      const client = new Cerebras({ apiKey: CEREBRAS_API_KEY, dangerouslyAllowBrowser: true });
-      const response = await client.chat.completions.create({
-        messages: [
-          { role: 'system', content: 'Generate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question" (string), "options" (array of 4 strings), "correctAnswer" (index 0-3), and "explanation" (string).' },
-          { role: 'user', content: `Context: ${context}` }
-        ],
-        model: 'llama3.1-8b', 
-        response_format: { type: 'json_object' }
-      });
-      const content = response.choices[0].message.content;
-      if (content) return JSON.parse(content);
-    } catch (e) {}
+  if (!context) {
+    throw new Error('No course content available to generate a quiz. The document may not have been processed yet.');
   }
 
-  const genAI = new GoogleGenerativeAI(API_KEYS[currentKeyIndex]);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', generationConfig: { responseMimeType: "application/json" } });
-  const result = await model.generateContent([{ text: `Context: ${context}\n\nGenerate quiz JSON with "questions" array. Each question must have "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }]);
-  return JSON.parse(result.response.text());
+  const response = await fetch(GATEWAY_URL, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({
+      provider: 'gemini',
+      payload: {
+        model: 'gemini-2.5-flash-lite',
+        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      }
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`Quiz Generation failed with status ${response.status}`);
+  }
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
+  }
+  return JSON.parse(data.candidates[0].content.parts[0].text);
+}
+
+// Service: Generate Flashcards
+export async function generateFlashcards(fileId: string) {
+  let query = supabase.from('courses').select('full_text, synthesis');
+  if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
+  else query = query.eq('file_id', fileId);
+  const { data: cached } = await query.maybeSingle();
+  const context = cached?.full_text || cached?.synthesis || '';
+
+  if (!context) {
+    throw new Error('No course content available to generate flashcards. The document may not have been processed yet.');
+  }
+
+  const response = await fetch(GATEWAY_URL, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({
+      provider: 'gemini',
+      payload: {
+        model: 'gemini-2.5-flash-lite',
+        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. Return a "cards" array with "front" and "back".` }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      }
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`Flashcard Generation failed with status ${response.status}`);
+  }
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
+  }
+  return JSON.parse(data.candidates[0].content.parts[0].text);
+}
+
+// Service: Generate Smart Chat Title
+export async function generateThreadTitle(userMessage: string) {
+  try {
+    const response = await fetch(GATEWAY_URL, {
+      method: 'POST',
+      headers: await authHeaders(),
+      body: JSON.stringify({
+        provider: 'cerebras',
+        payload: {
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a professional thread title generator. Your ONLY task is to read the user\'s first message inside the <user_message> tag and generate a highly concise, punchy 3-5 word title summarizing what they want to discuss. \n\nCRITICAL RULE: DO NOT answer the user\'s message, DO NOT try to assist, and DO NOT ask questions. Simply output the 3-5 word title and nothing else. No quotes, no prefix.' 
+            }, 
+            { 
+              role: 'user', 
+              content: `<user_message>\n${userMessage}\n</user_message>` 
+            }
+          ],
+          model: 'llama-3.3-70b',
+          stream: false
+        }
+      })
+    });
+
+    if (!response.ok) throw new Error("Title generation gateway failed");
+
+    const data = await response.json();
+    let title = data.choices?.[0]?.message?.content?.trim() || '';
+    
+    // Strip quotes
+    title = title.replace(/['"]/g, '');
+    
+    // Security check: If the model ignored instructions and returned a long paragraph, fallback to slicing the user message!
+    if (title.split(' ').length > 8) {
+      return userMessage.trim().slice(0, 30) + '...';
+    }
+    
+    return title || 'New Chat Session';
+  } catch (e) {
+    console.warn("Thread title generation failed, falling back to sliced message:", e);
+    return userMessage.trim().slice(0, 30) + '...';
+  }
 }

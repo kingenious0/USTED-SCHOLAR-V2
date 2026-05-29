@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 type Level = '100' | '200' | '300' | '400';
 type Semester = '1' | '2';
-type Programme = 'Computer Science' | 'Information Tech' | 'Data Analytics' | 'Cyber Security';
+type Programme = string;
 
 interface UserState {
   hasCompletedOnboarding: boolean;
+  isLoggedIn?: boolean;
+  name?: string;
+  avatarUrl?: string;
   level?: Level;
   semester?: Semester;
   programme?: Programme;
@@ -42,6 +46,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   
   const [selectedFile, setSelectedFile] = useState<any>(savedState.selectedFile || null);
+
+  // Supabase Auth Sync
+  useEffect(() => {
+    const syncProfile = async (userId: string) => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile && profile.programme) {
+          _setUserState(prev => ({
+            ...prev,
+            hasCompletedOnboarding: true,
+            isLoggedIn: true,
+            name: profile.name || prev.name,
+            programme: profile.programme,
+            level: profile.level,
+            semester: profile.semester
+          }));
+        }
+      } catch (err) {
+        console.error("Error syncing profile inside context:", err);
+      }
+    };
+
+    // 1. Initial Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+        syncProfile(session.user.id);
+      }
+    });
+
+    // 2. Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        _setUserState(prev => ({ ...prev, isLoggedIn: true }));
+        if (event === 'SIGNED_IN') {
+          syncProfile(session.user.id);
+        }
+      } else {
+        _setUserState(prev => ({
+          ...prev,
+          hasCompletedOnboarding: false,
+          isLoggedIn: false,
+          name: undefined,
+          avatarUrl: undefined,
+          level: undefined,
+          semester: undefined,
+          programme: undefined
+        }));
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Persistence Effect
   useEffect(() => {

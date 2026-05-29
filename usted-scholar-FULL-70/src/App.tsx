@@ -1,13 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import LandingScreen from './screens/LandingScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
-import DashboardScreen from './screens/DashboardScreen';
 import LibraryScreen from './screens/LibraryScreen';
 import HubScreen from './screens/HubScreen';
 import QuizScreen from './screens/QuizScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AdminScreen from './screens/AdminScreen';
+import FlashcardScreen from './screens/FlashcardScreen';
 import SideNavBar from './components/navigation/SideNavBar';
 import BottomNavBar from './components/navigation/BottomNavBar';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,12 +32,13 @@ function AppContent() {
             <Routes location={location}>
               <Route path="/" element={<LandingScreen />} />
               <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="/dashboard" element={<DashboardScreen />} />
+              <Route path="/dashboard" element={<Navigate to="/library" replace />} />
               <Route path="/library" element={<LibraryScreen />} />
               <Route path="/hub" element={<HubScreen />} />
               <Route path="/quiz" element={<QuizScreen />} />
               <Route path="/profile" element={<ProfileScreen />} />
               <Route path="/admin" element={<AdminScreen />} />
+              <Route path="/flashcards" element={<FlashcardScreen />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
