@@ -297,7 +297,7 @@ export default function HubScreen() {
         return;
       }
 
-      // Fast-path: If synthesis is already loaded in our selection context, load instantly with 0ms loading time!
+      // 1. Direct fast-path check using current state/context
       if (selectedFile?.synthesis) {
         setSynthesis(selectedFile.synthesis);
         setIsSynthesizing(false);
@@ -308,13 +308,52 @@ export default function HubScreen() {
       setIsSynthesizing(true);
       setSynthesisStage('Checking neural cache...');
       try {
-        console.log("🖥️ HubScreen: Dispatching generateSynthesis for targetId:", targetId);
+        // 2. Direct database query to fetch cached synthesis BEFORE doing any extraction or AI calling!
+        console.log("🖥️ HubScreen: Querying database cache directly for targetId:", targetId);
+        const isTargetUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+        let query = supabase.from('courses').select('synthesis, full_text');
+        if (isTargetUUID) query = query.or(`id.eq.${targetId},file_id.eq.${targetId}`);
+        else query = query.eq('file_id', targetId);
+        
+        const { data: list, error: dbError } = await query.order('created_at', { ascending: false });
+        if (dbError) {
+          console.error("🖥️ HubScreen: Cache query error:", dbError);
+        }
+        
+        const latestCourse = list?.[0];
+        if (latestCourse?.synthesis) {
+          console.log("🖥️ HubScreen: Direct database cache hit! synthesis length:", latestCourse.synthesis.length);
+          setSynthesis(latestCourse.synthesis);
+          setSynthesisStage('Ready');
+          
+          // Lock the synthesis and full_text into our client-side state so it bypasses all subsequent reloads
+          if (selectedFile) {
+            setSelectedFile({ 
+              ...selectedFile, 
+              synthesis: latestCourse.synthesis,
+              full_text: latestCourse.full_text || selectedFile.full_text
+            });
+          }
+          return;
+        }
+
+        // 3. Fallback: If no cache exists, only then trigger generateSynthesis cascade
+        console.log("🖥️ HubScreen: Cache miss. Dispatching generateSynthesis for targetId:", targetId);
+        let finalSynthesis = '';
         await generateSynthesis(targetId, (text, stage) => {
-          console.log(`🖥️ HubScreen: generateSynthesis callback. text len: ${text?.length || 0}, stage: ${stage}`);
           if (stage) setSynthesisStage(stage);
           setSynthesis(text);
+          finalSynthesis = text;
         });
+        
         console.log("🖥️ HubScreen: generateSynthesis execution completed successfully!");
+        if (finalSynthesis && selectedFile) {
+          setSelectedFile({ 
+            ...selectedFile, 
+            synthesis: finalSynthesis,
+            full_text: latestCourse?.full_text || selectedFile.full_text
+          });
+        }
       } catch (error: any) {
         console.error('🖥️ HubScreen: generateSynthesis CAUGHT ERROR:', error);
         if (error.message?.includes('429')) setErrorCooldown(10);
@@ -324,7 +363,7 @@ export default function HubScreen() {
       }
     }
     fetchSynthesis();
-  }, [targetId, selectedFile]);
+  }, [targetId]);
 
   useEffect(() => {
     if (errorCooldown > 0) {

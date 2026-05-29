@@ -79,14 +79,15 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
     else query = query.eq('file_id', fileId);
     
     console.log("🧬 generateSynthesis: Querying Supabase courses table for cache...");
-    const { data: cached, error: queryError } = await query.maybeSingle();
+    const { data: list, error: queryError } = await query.order('created_at', { ascending: false });
 
     if (queryError) {
       console.error("🧬 generateSynthesis: Supabase query error:", queryError.message);
       throw queryError;
     }
 
-    console.log("🧬 generateSynthesis: Supabase query result:", cached);
+    const cached = list?.[0];
+    console.log("🧬 generateSynthesis: Supabase query result (latest cached course):", cached);
 
     if (cached?.synthesis) {
       console.log("🧬 generateSynthesis: FOUND CACHED SYNTHESIS! Clean cache and update.");
