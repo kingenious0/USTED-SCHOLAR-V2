@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu, RefreshCw, ChevronLeft, BookOpen } from 'lucide-react';
+import { Send, Sparkles, FileText, ZoomIn, Search, Maximize2, X, CheckCircle2, Lightbulb, Loader2, Brain, ImagePlus, MessageSquarePlus, Trash2, Menu, RefreshCw, ChevronLeft, BookOpen, Layers, Award } from 'lucide-react';
 
 import { generateSynthesis, streamChat } from '../lib/ai';
 import { supabase } from '../lib/supabase';
@@ -23,6 +23,7 @@ export default function HubScreen() {
   const [isSynthesizing, setIsSynthesizing] = useState(!selectedFile?.synthesis);
   const [errorCooldown, setErrorCooldown] = useState(0);
   const [synthesisStage, setSynthesisStage] = useState(selectedFile?.synthesis ? 'Ready' : 'Checking neural cache...');
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSyncingThreads, setIsSyncingThreads] = useState(false);
@@ -426,6 +427,25 @@ export default function HubScreen() {
                 <Menu className="w-4 h-4" />
               </button>
             )}
+            {/* Focus Mode Toggle (Desktop only) */}
+            <button
+              onClick={() => setIsFocusMode(!isFocusMode)}
+              className={`p-2 transition-all rounded-lg border border-[var(--border-color)] hidden lg:flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isFocusMode ? 'bg-electric-blue text-white shadow-lg shadow-electric-blue/20' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+              title={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+            >
+              {isFocusMode ? (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 rotate-180 text-white" />
+                  <span>Exit Focus</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Focus Mode</span>
+                </>
+              )}
+            </button>
+
             <Link to="/library" className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-color)]">
               <X className="w-4 h-4" />
             </Link>
@@ -470,19 +490,71 @@ export default function HubScreen() {
                 </div>
               </div>
             ) : synthesis ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="prose dark:prose-invert prose-lg max-w-none
-                prose-headings:text-[var(--text-primary)] prose-headings:font-black prose-headings:tracking-tight
-                prose-p:text-[var(--text-secondary)] prose-p:leading-relaxed prose-p:text-lg
-                prose-strong:text-[var(--text-primary)] prose-strong:font-black
-                prose-code:text-gold prose-code:bg-[var(--bg-secondary)] prose-code:px-2 prose-code:py-0.5 prose-code:rounded-md prose-code:font-bold
-                prose-li:text-[var(--text-tertiary)] prose-li:font-medium
-                prose-blockquote:border-l-electric-blue prose-blockquote:bg-electric-blue/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl"
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{synthesis}</ReactMarkdown>
-              </motion.div>
+              <div className="space-y-12">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="prose dark:prose-invert prose-lg max-w-none
+                  prose-headings:text-[var(--text-primary)] prose-headings:font-black prose-headings:tracking-tight
+                  prose-p:text-[var(--text-secondary)] prose-p:leading-relaxed prose-p:text-lg
+                  prose-strong:text-[var(--text-primary)] prose-strong:font-black
+                  prose-code:text-gold prose-code:bg-[var(--bg-secondary)] prose-code:px-2 prose-code:py-0.5 prose-code:rounded-md prose-code:font-bold
+                  prose-li:text-[var(--text-tertiary)] prose-li:font-medium
+                  prose-blockquote:border-l-electric-blue prose-blockquote:bg-electric-blue/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl"
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{synthesis}</ReactMarkdown>
+                </motion.div>
+
+                {/* PREMIUM STUDY CENTER TOOLBAR (Fitts's Law Cards) */}
+                <div className="border-t border-[var(--border-color)] pt-8 mt-12">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-tertiary)] mb-4">Study Center</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    {/* Summary Button */}
+                    <button
+                      onClick={() => {
+                        setActiveTab('chat');
+                        handleSend("Summarize the key concepts of this section in bullet points.");
+                      }}
+                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-electric-blue/5 hover:border-electric-blue/20 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-electric-blue/5 blur-xl rounded-full pointer-events-none group-hover:bg-electric-blue/10 transition-colors" />
+                      <div className="w-10 h-10 rounded-xl bg-electric-blue/10 text-electric-blue flex items-center justify-center mb-4 group-hover:bg-electric-blue group-hover:text-white transition-all duration-300">
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Read Summary</h5>
+                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">AI Bullet Points</p>
+                    </button>
+
+                    {/* Flashcard Deck Button */}
+                    <Link
+                      to="/flashcards"
+                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-sunset-orange/5 hover:border-sunset-orange/20 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-sunset-orange/5 blur-xl rounded-full pointer-events-none group-hover:bg-sunset-orange/10 transition-colors" />
+                      <div className="w-10 h-10 rounded-xl bg-sunset-orange/10 text-sunset-orange flex items-center justify-center mb-4 group-hover:bg-sunset-orange group-hover:text-white transition-all duration-300">
+                        <Layers className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Study Deck</h5>
+                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">15 Active Cards</p>
+                    </Link>
+
+                    {/* Quiz Button */}
+                    <Link
+                      to="/quiz"
+                      className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-left hover:scale-[1.02] active:scale-[0.98] transition-all hover:bg-emerald-500/5 hover:border-emerald-500/20 group cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-xl rounded-full pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <h5 className="font-extrabold text-[var(--text-primary)] text-sm tracking-tight">Start Test</h5>
+                      <p className="text-[10px] text-[var(--text-tertiary)] font-bold uppercase tracking-wider mt-1">5 Academic MCQs</p>
+                    </Link>
+
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full py-32 text-center">
                 <div className="w-20 h-20 rounded-[2.5rem] bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center mb-6">
@@ -497,7 +569,7 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className={`w-full lg:w-[420px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'}`}>
+      <aside className={`w-full lg:w-[420px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'} ${isFocusMode ? 'lg:hidden' : ''}`}>
         {/* Desktop Header */}
         <header className="p-5 border-b border-[var(--border-color)] hidden lg:flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -649,20 +721,6 @@ export default function HubScreen() {
 
         {/* Input */}
         <div className="p-4 bg-[var(--bg-primary)] border-t border-[var(--border-color)] space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => handleSend("Summarize the key concepts of this section in bullet points.")}
-              className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-electric-blue hover:bg-electric-blue/5 transition-all text-center border border-electric-blue/10">
-              Summary
-            </button>
-            <Link to="/flashcards"
-              className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-sunset-orange hover:bg-sunset-orange/5 transition-all text-center border border-sunset-orange/10">
-              Deck
-            </Link>
-            <Link to="/quiz"
-              className="py-1.5 px-2 bg-[var(--bg-tertiary)] rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/5 transition-all text-center border border-emerald-500/10">
-              Quiz
-            </Link>
-          </div>
 
           <div className="relative group">
             {imagePreview && (

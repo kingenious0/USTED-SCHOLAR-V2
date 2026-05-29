@@ -37,13 +37,13 @@
   --bg-primary: #050508; /* Ultra-deep midnight navy */
   --bg-secondary: #0D0D14;
   --bg-tertiary: #16161F;
-  --text-primary: #F2F4F7; /* Soft white */
-  --text-secondary: #9BA3AF; /* Muted gray-blue */
-  --text-tertiary: #6B7280;
-  --border-color: rgba(59, 130, 246, 0.1); /* Subtle blue tint border */
+  --text-primary: #FFFFFF; /* Pure white */
+  --text-secondary: #E4E4E7; /* Vibrant Zinc-200 (AAA Contrast ratio > 12:1) */
+  --text-tertiary: #A1A1AA;  /* Vibrant Zinc-400 (Contrast ratio > 6.5:1) */
+  --border-color: rgba(59, 130, 246, 0.15); /* Slightly more defined borders */
   --accent-primary: #2E5BFF;
   --accent-secondary: #FFCC22;
-  --glass-bg: rgba(5, 5, 8, 0.85);
+  --glass-bg: rgba(5, 5, 8, 0.9);
 }
 
 @layer base {
