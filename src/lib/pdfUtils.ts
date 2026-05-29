@@ -1,11 +1,3 @@
-import * as pdfjs from 'pdfjs-dist';
-
-// Configure PDF.js Worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
-
 export async function extractTextFromPdf(
   buffer: ArrayBuffer, 
   onProgress?: (page: number, total: number) => void,
@@ -14,6 +6,14 @@ export async function extractTextFromPdf(
   try {
     // Clone buffer to prevent detachment issues
     const data = new Uint8Array(buffer.slice(0));
+    
+    // Dynamic import of PDF.js to split the bundle size
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString();
+
     const pdf = await pdfjs.getDocument({ data }).promise;
     let fullText = '';
     
@@ -113,7 +113,7 @@ export async function extractTextFromPdf(
         const context = canvas.getContext('2d');
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        await page.render({ canvasContext: context!, viewport }).promise;
+        await page.render({ canvas: canvas, canvasContext: context!, viewport } as any).promise;
         
         // Add to parallel queue
         if (scheduler) {

@@ -10,20 +10,28 @@ serve(async (req) => {
 
   try {
     const { phone, name } = await req.json()
-    
+
     if (!phone) {
       return new Response(JSON.stringify({ success: false, error: 'Phone number is required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 to prevent breaking frontend flow
+        status: 200,
       })
     }
-    
-    // Support all possible environment names, with premium fallback to Kingenious working production credentials
-    const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY') || Deno.env.get('FROG_SMS_API_KEY') || '$2a$10$wMCC5UxDLp1AUWeUNRPjpurCFSpc2/oBsj4x28/mUI9fuEpZ.Zq02'
-    const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME') || Deno.env.get('FROG_SMS_USERNAME') || 'Kingenious'
-    const SENDER_ID = Deno.env.get('WIGAL_SENDER_ID') || Deno.env.get('FROG_SMS_SENDER_ID') || 'USTEDSCHLR' 
 
-    // 🧼 Clean and format phone number to strict 233XXXXXXXXX format (No leading 0!)
+    const WIGAL_API_KEY = Deno.env.get('WIGAL_API_KEY');
+    const WIGAL_USERNAME = Deno.env.get('WIGAL_USERNAME');
+    const SENDER_ID = Deno.env.get('WIGAL_SENDER_ID') || 'USTEDSCHLR';
+
+    if (!WIGAL_API_KEY || !WIGAL_USERNAME) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'SMS service not configured. Set WIGAL_API_KEY and WIGAL_USERNAME environment variables.'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
+
     let formattedPhone = phone.replace(/\D/g, '')
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '233' + formattedPhone.substring(1)
@@ -33,9 +41,8 @@ serve(async (req) => {
       formattedPhone = '233' + formattedPhone
     }
 
-    const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Join the community now: https://chat.whatsapp.com/DRinAaouI5y9K0DvYyu1E1 🎓🚀`
+    const message = `Welcome to USTED Scholar, ${name}! Your professional academic workspace is ready. Join the community now: https://chat.whatsapp.com/DRinAaouI5y9K0DvYyu1E1`
 
-    // 🐸 EXACT FROG API V3 PAYLOAD STRUCTURE FROM WORKING SCHEMAS
     const body = {
       senderid: SENDER_ID,
       destinations: [
@@ -50,31 +57,30 @@ serve(async (req) => {
 
     const wigalUrl = `https://frogapi.wigal.com.gh/api/v3/sms/send`
 
-    console.log(`📡 Dispatching payload to Wigal for destination: ${formattedPhone} using Sender ID: ${SENDER_ID}`)
-    
+    console.log(`Dispatching SMS to: ${formattedPhone} using Sender ID: ${SENDER_ID}`)
+
     const response = await fetch(wigalUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'API-KEY': WIGAL_API_KEY,
         'USERNAME': WIGAL_USERNAME,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
       body: JSON.stringify(body)
     })
 
-    // 🛡️ Safe decoding to catch any residual routing errors
     const text = await response.text()
-    console.log("🔒 Raw Response received from Wigal:", text)
+    console.log("Raw SMS Response:", text)
 
     let result;
     if (response.ok && !text.startsWith("<!")) {
       result = JSON.parse(text)
     } else {
-      result = { 
-        status: 'SERVER_GATEWAY_REJECTION', 
-        message: 'The gateway returned a non-JSON code response (Firewall/Auth issue).',
-        rawSnippet: text.substring(0, 150) 
+      result = {
+        status: 'SERVER_GATEWAY_REJECTION',
+        message: 'The gateway returned a non-JSON code response.',
+        rawSnippet: text.substring(0, 150)
       }
     }
 
@@ -84,8 +90,8 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('💥 Critical Edge Function Failure:', error.message)
-    return new Response(JSON.stringify({ 
+    console.error('SMS Edge Function Failure:', error.message)
+    return new Response(JSON.stringify({
       error: error.message,
       status: 'CRITICAL_FAILURE'
     }), {

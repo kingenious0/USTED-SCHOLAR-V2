@@ -2,18 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  RotateCcw, 
-  CheckCircle2, 
-  AlertCircle, 
-  ArrowRight, 
-  ArrowLeft, 
-  Sparkles, 
-  Loader2,
-  Trophy,
-  Brain
-} from 'lucide-react';
+import { X, RotateCcw, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Loader2, Trophy, Brain } from 'lucide-react';
 import { generateFlashcards } from '../lib/ai';
 
 export default function FlashcardScreen() {
@@ -35,7 +24,13 @@ export default function FlashcardScreen() {
       }
       try {
         const data = await generateFlashcards(targetId);
-        if (data.cards) setCards(data.cards);
+        let parsedCards: any[] = [];
+        if (Array.isArray(data)) {
+          parsedCards = data;
+        } else if (data && typeof data === 'object') {
+          parsedCards = data.cards || data.flashcards || Object.values(data).find(Array.isArray) || [];
+        }
+        setCards(parsedCards);
       } catch (err) {
         console.error('Flashcard Error:', err);
       } finally {
@@ -47,7 +42,7 @@ export default function FlashcardScreen() {
 
   const handleNext = (mastered: boolean) => {
     if (mastered) setMasteredCount(prev => prev + 1);
-    
+
     if (currentIndex < cards.length - 1) {
       setIsFlipped(false);
       setTimeout(() => {
@@ -60,37 +55,52 @@ export default function FlashcardScreen() {
 
   if (loading) return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 text-center transition-colors">
-       <div className="w-20 h-20 relative mb-8">
-           <div className="absolute inset-0 bg-[var(--accent-primary)]/20 blur-2xl rounded-full animate-pulse" />
-           <Loader2 className="w-20 h-20 text-[var(--accent-primary)] animate-spin relative z-10" />
-       </div>
-       <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Synthesizing Study Deck...</h2>
-       <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs">Extracting key concepts from {selectedFile?.name}</p>
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-electric-blue/20 blur-2xl rounded-full animate-pulse" />
+        <Loader2 className="w-16 h-16 text-electric-blue animate-spin relative z-10" />
+      </div>
+      <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Building your study deck...</h2>
+      <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs">{selectedFile?.name || 'Extracting concepts'}</p>
+    </div>
+  );
+
+  if (!loading && cards.length === 0) return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 text-center transition-colors">
+      <div className="w-20 h-20 rounded-[2.5rem] bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center mb-6">
+        <AlertCircle className="w-10 h-10 text-sunset-orange animate-pulse" />
+      </div>
+      <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">No flashcards found</h2>
+      <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs mb-8 max-w-sm leading-relaxed">
+        We couldn't generate study cards for this module. Make sure the course has processed textbook text first.
+      </p>
+      <Link to="/hub"
+        className="px-8 py-3.5 bg-gradient-to-r from-electric-blue to-blue-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-electric-blue/20 active:scale-95 transition-all">
+        Back to Hub
+      </Link>
     </div>
   );
 
   if (showResults) return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 text-center transition-colors">
-       <motion.div 
-         initial={{ scale: 0.9, opacity: 0 }}
-         animate={{ scale: 1, opacity: 1 }}
-         className="bg-[var(--bg-secondary)] p-12 rounded-[3rem] max-w-md w-full relative overflow-hidden border border-[var(--border-color)] shadow-xl"
-       >
-          <Trophy className="w-20 h-20 text-[var(--accent-secondary)] mx-auto mb-6" />
-          <h2 className="text-4xl font-black text-[var(--text-primary)] mb-2">Deck Complete</h2>
-          <div className="text-6xl font-black text-[var(--accent-primary)] mb-8">
-            {cards.length > 0 ? Math.round((masteredCount / cards.length) * 100) : 0}%
-          </div>
-          <p className="text-[var(--text-secondary)] font-medium mb-10 leading-relaxed">
-             You mastered {masteredCount} out of {cards.length} concepts. Keep pushing for that 100% mastery!
-          </p>
-          <Link 
-            to="/hub"
-            className="w-full block py-5 bg-[var(--accent-primary)] text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-[var(--accent-primary)]/20 active:scale-95 transition-all"
-          >
-            Back to Hub
-          </Link>
-       </motion.div>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-secondary)] p-10 rounded-[3rem] max-w-md w-full relative overflow-hidden border border-[var(--border-color)] shadow-xl"
+      >
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-gradient-to-br from-electric-blue/20 to-blue-600/20 blur-3xl rounded-full" />
+        <Trophy className="w-16 h-16 text-sunset-orange mx-auto mb-6 relative z-10" />
+        <h2 className="text-4xl font-black text-[var(--text-primary)] mb-2 relative z-10">Deck Complete</h2>
+        <div className="text-6xl font-black text-electric-blue mb-6 relative z-10">
+          {cards.length > 0 ? Math.round((masteredCount / cards.length) * 100) : 0}%
+        </div>
+        <p className="text-[var(--text-secondary)] font-medium mb-8 leading-relaxed relative z-10">
+          {masteredCount} / {cards.length} mastered. Keep pushing for 100%!
+        </p>
+        <Link to="/hub"
+          className="w-full block py-4 bg-gradient-to-r from-electric-blue to-blue-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-widest shadow-xl shadow-electric-blue/20 active:scale-95 transition-all relative z-10">
+          Back to Hub
+        </Link>
+      </motion.div>
     </div>
   );
 
@@ -98,66 +108,68 @@ export default function FlashcardScreen() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-primary)] flex flex-col p-6 lg:p-12 transition-colors relative overflow-hidden">
-      <header className="flex justify-between items-center mb-12 relative z-10">
-        <Link to="/hub" className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-all">
-          <X className="w-6 h-6" />
+      <div className="fixed top-[-20%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-bl from-sunset-orange/5 to-transparent blur-[150px] rounded-full pointer-events-none" />
+
+      <header className="flex justify-between items-center mb-10 relative z-10">
+        <Link to="/hub" className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-all bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-color)]">
+          <X className="w-5 h-5" />
         </Link>
-        
+
         <div className="flex flex-col items-center">
-           <span className="text-[10px] font-black text-[var(--accent-primary)] uppercase tracking-[0.3em] mb-1">Mastery Deck</span>
-           <span className="text-xs font-black text-[var(--text-primary)]">{currentIndex + 1} / {cards.length}</span>
+          <span className="text-[10px] font-black text-electric-blue uppercase tracking-[0.3em] mb-1">Study Deck</span>
+          <span className="text-sm font-black text-[var(--text-primary)]">{currentIndex + 1} / {cards.length}</span>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-full">
-           <Brain className="w-4 h-4 text-[var(--accent-secondary)]" />
-           <span className="text-xs font-black text-[var(--text-primary)]">{masteredCount}</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-br from-electric-blue/20 to-blue-600/20 border border-electric-blue/20 rounded-full">
+          <Brain className="w-4 h-4 text-electric-blue" />
+          <span className="text-xs font-black text-electric-blue">{masteredCount}</span>
         </div>
       </header>
 
-      <main className="flex-1 max-w-xl mx-auto w-full flex flex-col justify-center gap-12 relative z-10">
-        <div className="perspective-1000 h-[400px] w-full cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
-          <motion.div 
+      <main className="flex-1 max-w-lg mx-auto w-full flex flex-col justify-center gap-8 relative z-10">
+        <div className="perspective-1000 h-[380px] w-full cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
+          <motion.div
             animate={{ rotateY: isFlipped ? 180 : 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
             className="w-full h-full relative preserve-3d"
           >
             {/* Front */}
-            <div className="absolute inset-0 backface-hidden bg-[var(--bg-secondary)] border-2 border-[var(--border-color)] rounded-[3rem] p-10 flex flex-col items-center justify-center text-center shadow-xl">
-               <div className="absolute top-8 left-8">
-                  <Sparkles className="w-5 h-5 text-[var(--accent-primary)]/30" />
-               </div>
-               <h3 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] leading-tight tracking-tight uppercase">
-                 {currentCard?.front}
-               </h3>
-               <p className="mt-8 text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest animate-pulse">Click to flip</p>
+            <div className="absolute inset-0 backface-hidden bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center shadow-xl">
+              <div className="absolute top-6 left-6">
+                <Sparkles className="w-5 h-5 text-electric-blue/30" />
+              </div>
+              <h3 className="text-xl md:text-2xl font-black text-[var(--text-primary)] leading-tight tracking-tight">
+                {currentCard?.front}
+              </h3>
+              <p className="mt-6 text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest animate-pulse">Tap to reveal</p>
             </div>
 
             {/* Back */}
-            <div className="absolute inset-0 backface-hidden bg-[var(--bg-secondary)] border-2 border-[var(--accent-primary)]/30 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center shadow-2xl rotate-y-180">
-               <div className="absolute top-8 right-8">
-                  <Brain className="w-5 h-5 text-[var(--accent-secondary)]/30" />
-               </div>
-               <div className="max-h-full overflow-y-auto custom-scrollbar pr-2">
-                 <p className="text-lg md:text-xl font-bold text-[var(--text-primary)] leading-relaxed">
-                   {currentCard?.back}
-                 </p>
-               </div>
-               <p className="mt-8 text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Mastery Level: Advanced</p>
+            <div className="absolute inset-0 backface-hidden bg-gradient-to-br from-[var(--bg-secondary)] to-electric-blue/5 border border-electric-blue/30 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center shadow-2xl rotate-y-180">
+              <div className="absolute top-6 right-6">
+                <Brain className="w-5 h-5 text-electric-blue/40" />
+              </div>
+              <div className="max-h-full overflow-y-auto custom-scrollbar pr-2">
+                <p className="text-base md:text-lg font-bold text-[var(--text-primary)] leading-relaxed">
+                  {currentCard?.back}
+                </p>
+              </div>
+              <p className="mt-6 text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Mastery: Advanced</p>
             </div>
           </motion.div>
         </div>
 
         <div className="flex gap-4">
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); handleNext(false); }}
-            className="flex-1 py-5 bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500/5 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+            className="flex-1 py-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-500/5 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
           >
             <RotateCcw className="w-4 h-4" />
             Review Later
           </button>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); handleNext(true); }}
-            className="flex-1 py-5 bg-[var(--accent-primary)] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[var(--accent-primary)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="flex-1 py-4 bg-gradient-to-r from-electric-blue to-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-electric-blue/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="w-4 h-4" />
             Mastered
@@ -166,9 +178,9 @@ export default function FlashcardScreen() {
       </main>
 
       {/* Progress Bar */}
-      <div className="fixed bottom-0 left-0 w-full h-1.5 bg-[var(--bg-secondary)]">
-        <motion.div 
-          className="h-full bg-[var(--accent-primary)]"
+      <div className="fixed bottom-0 left-0 w-full h-1 bg-[var(--bg-secondary)]">
+        <motion.div
+          className="h-full bg-gradient-to-r from-electric-blue to-blue-500"
           initial={{ width: 0 }}
           animate={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
         />

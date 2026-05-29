@@ -3,10 +3,14 @@ import { supabase } from './supabase';
 import Groq from 'groq-sdk';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { extractTextFromPdf } from './pdfUtils';
-import * as pdfjs from 'pdfjs-dist';
 
 const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
 
 // Anti-AI Persona & Constraints
 const SYNTHESIS_PERSONA = `Act as a Senior Academic Mentor. Use a concise, high-signal, low-noise writing style.
@@ -66,15 +70,26 @@ async function fetchPdfBufferFromStorage(fileId: string): Promise<ArrayBuffer | 
 
 // Service: Generate Synthesis
 export async function generateSynthesis(fileId: string, onUpdate: (text: string, stage?: string) => void, force: boolean = false) {
+  console.log("🧬 generateSynthesis: ENTERED for fileId:", fileId, "force:", force);
   onUpdate('', 'Checking neural cache...');
   
   if (!force) {
     let query = supabase.from('courses').select('synthesis, full_text, storage_path, file_id');
     if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
     else query = query.eq('file_id', fileId);
-    const { data: cached } = await query.maybeSingle();
+    
+    console.log("🧬 generateSynthesis: Querying Supabase courses table for cache...");
+    const { data: cached, error: queryError } = await query.maybeSingle();
+
+    if (queryError) {
+      console.error("🧬 generateSynthesis: Supabase query error:", queryError.message);
+      throw queryError;
+    }
+
+    console.log("🧬 generateSynthesis: Supabase query result:", cached);
 
     if (cached?.synthesis) {
+      console.log("🧬 generateSynthesis: FOUND CACHED SYNTHESIS! Clean cache and update.");
       const cleanedCache = cleanAIText(cached.synthesis);
       onUpdate(cleanedCache, 'Ready');
       return cleanedCache;
@@ -82,9 +97,11 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
     
     // If not forced, try to use full_text if available
     let textToProcess = cached?.full_text || '';
+    console.log("🧬 generateSynthesis: No cached synthesis found. Text to process length:", textToProcess.length);
     
     // Dynamically resolve legacy document OCR via backend Unstructured.io if full_text is empty
     if (!textToProcess && cached?.storage_path && cached?.file_id) {
+      console.log("🧬 generateSynthesis: Text is empty, triggering dynamic backend OCR fallback...");
       onUpdate('', 'Analyzing document DNA (Heavy-Duty OCR)... 👁️');
       try {
         const { data: parseData, error: parseError } = await supabase.functions.invoke('admin-manager', {
@@ -101,6 +118,8 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
           const { data: refetched } = await refetchQuery.maybeSingle();
           textToProcess = refetched?.full_text || '';
           console.log(`✅ Dynamically resolved legacy document OCR with ${textToProcess?.length} characters!`);
+        } else {
+          console.warn("🧬 generateSynthesis: Backend OCR invocation finished with error:", parseError || parseData?.error);
         }
       } catch (err) {
         console.warn("Dynamic OCR resolution failed, falling back to local extractor:", err);
@@ -115,14 +134,19 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
         optimizedText = textToProcess.substring(0, MAX_CHAR_LIMIT) + 
           "\n\n... [Content truncated for AI token window optimization. Ask the AI assistant on the right to explain specific sections in deeper detail!] ...";
       }
+      console.log("🧬 generateSynthesis: Text found! Dispatched to performSynthesis...");
       return await performSynthesis(fileId, optimizedText, onUpdate);
+    } else {
+      console.log("🧬 generateSynthesis: No text found in cache. Proceeding to force extraction/download...");
     }
   }
 
   // Force extraction or no cache found
+  console.log("🧬 generateSynthesis: Initiating forced/manual extraction from Storage...");
   onUpdate('', 'Extracting text...');
   const buffer = await fetchPdfBufferFromStorage(fileId);
   if (!buffer) {
+    console.error("🧬 generateSynthesis: fetchPdfBufferFromStorage returned null. Could not read storage.");
     onUpdate('### Error: Could not reach document storage.', 'Error');
     return;
   }
@@ -183,67 +207,149 @@ export async function generateSynthesis(fileId: string, onUpdate: (text: string,
 }
 
 async function performSynthesis(fileId: string, textToProcess: string, onUpdate: (text: string, stage?: string) => void) {
+  console.log("🧬 performSynthesis: ENTERED for fileId:", fileId, "text length:", textToProcess.length);
   onUpdate('', 'Secure AI Synthesis...');
-  try {
-    const response = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({
-        provider: 'cerebras',
-        payload: {
-          messages: [
-            { role: 'system', content: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` },
-            { role: 'user', content: textToProcess }
-          ],
-          model: 'llama3.1-8b',
-          stream: true
+
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧬 performSynthesis: Attempting synthesis via ${attempt.provider} (Model: ${attempt.model})...`);
+      const headers = await authHeaders();
+      console.log("🧬 performSynthesis: Authorization headers retrieved. Token length:", headers['Authorization']?.length);
+
+      // Structure payload dynamically based on provider API requirements (OpenAI vs Google Gemini)
+      let bodyPayload: any = {};
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            stream: true,
+            contents: [
+              { role: 'user', parts: [{ text: textToProcess }] }
+            ],
+            system_instruction: {
+              parts: [{ text: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` }]
+            }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { role: 'system', content: `You are the USTED Scholar AI. ${SYNTHESIS_PERSONA}` },
+              { role: 'user', content: textToProcess }
+            ],
+            model: attempt.model,
+            stream: true
+          }
+        };
+      }
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(bodyPayload)
+      });
+
+      console.log(`🧬 performSynthesis: ${attempt.provider} gateway response status:`, response.status, response.statusText);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`${attempt.provider} gateway HTTP error: ${errText}`);
+      }
+
+      const reader = response.body?.getReader();
+      let text = '';
+      let isFirstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+        const chunk = new TextDecoder().decode(value);
+        console.log(`🧬 performSynthesis: Chunk received from ${attempt.provider}:`, chunk.slice(0, 150) + (chunk.length > 150 ? '...' : ''));
+
+        // Check for stream-level errors wrapped inside a 200 HTTP code (like Cerebras' model_not_found or Groq's rate limit)
+        if (isFirstChunk) {
+          isFirstChunk = false;
+          if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
+            throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+          }
         }
-      })
-    });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      let parsedError = errText;
-      try {
-        const parsed = JSON.parse(errText);
-        parsedError = parsed.message || parsed.error || errText;
-      } catch (pe) {}
-      throw new Error(`AI Gateway Error (${response.status}): ${parsedError}`);
-    }
-
-    const reader = response.body?.getReader();
-    let text = '';
-    while (true) {
-      const { done, value } = await reader!.read();
-      if (done) break;
-      const chunk = new TextDecoder().decode(value);
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            text += data.choices[0]?.delta?.content || '';
-            onUpdate(cleanAIText(text), 'Writing...');
-          } catch (e) {}
+        if (attempt.provider === 'gemini') {
+          // Robust JSON regex parsing for Gemini stream chunk candidates
+          const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+          for (const match of matches) {
+            try {
+              text += JSON.parse(`"${match[1]}"`);
+            } catch (e) {}
+          }
+          onUpdate(cleanAIText(text), 'Writing...');
+        } else {
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                let content = data.choices?.[0]?.delta?.content || '';
+                text += content;
+                onUpdate(cleanAIText(text), 'Writing...');
+              } catch (e) {}
+            }
+          }
         }
       }
+
+      const final = cleanAIText(text);
+      if (!final || final.trim().length === 0) {
+        throw new Error(`Empty synthesis text returned from ${attempt.provider}`);
+      }
+
+      console.log(`🧬 performSynthesis: SUCCESS! Synthesis generated successfully using ${attempt.provider}.`);
+
+      // Save the synthesis to the DB
+      let updateQuery = supabase.from('courses').update({ synthesis: final });
+      if (isUUID(fileId)) updateQuery = updateQuery.eq('id', fileId);
+      else updateQuery = updateQuery.eq('file_id', fileId);
+      await updateQuery;
+
+      return final;
+
+    } catch (err: any) {
+      console.error(`🧬 performSynthesis: ${attempt.provider} attempt FAILED:`, err.message);
+      lastError = err;
+      // Loop continues to the next provider (Groq)
     }
-    const final = cleanAIText(text);
-    
-    // Safety Update: Target the right column based on ID type
-    let updateQuery = supabase.from('courses').update({ synthesis: final });
-    if (isUUID(fileId)) updateQuery = updateQuery.eq('id', fileId);
-    else updateQuery = updateQuery.eq('file_id', fileId);
-    
-    await updateQuery;
-    return final;
-  } catch (e) {
-    console.error('Synthesis failed:', e);
-    throw e; // Re-throw error so generateSynthesis caller receives it
   }
+
+  // If we reach here, all providers have failed
+  throw new Error(`All synthesis providers failed. Last error: ${lastError?.message}`);
 }
 
-// Service: Chat with Document
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Service: Chat with Document (supports images via Gemini)
 export async function streamChat(fileId: string, message: string, history: any[], onUpdate: (text: string) => void, synthesisContext?: string, imageFile?: File | null) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
@@ -252,44 +358,186 @@ export async function streamChat(fileId: string, message: string, history: any[]
   const systemContext = cached?.full_text || cached?.synthesis || '';
 
   try {
-    const response = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({
-        provider: 'groq',
-        payload: {
-          messages: [
-            { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` },
-            ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
-            { role: 'user', content: message }
-          ],
-          model: 'llama-3.3-70b-versatile',
-          stream: true
-        }
-      })
-    });
+    const hasImage = !!imageFile;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Groq Gateway Error (${response.status}): ${errText}`);
-    }
+    if (hasImage) {
+      const base64 = await fileToBase64(imageFile!);
+      const imageMime = imageFile!.type || 'image/png';
 
-    const reader = response.body?.getReader();
-    let text = '';
-    while (true) {
-      const { done, value } = await reader!.read();
-      if (done) break;
-      const chunk = new TextDecoder().decode(value);
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
+      const contents: any[] = history.map(m => ({
+        role: m.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: m.text || '' }]
+      }));
+      contents.push({
+        role: 'user',
+        parts: [
+          { text: message },
+          { inline_data: { mime_type: imageMime, data: base64 } }
+        ]
+      });
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({
+          provider: 'gemini',
+          payload: {
+            model: 'gemini-2.5-flash-lite',
+            stream: true,
+            contents,
+            system_instruction: {
+              parts: [{ text: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` }]
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini Vision Error (${response.status}): ${errText}`);
+      }
+
+      const reader = response.body?.getReader();
+      let text = '';
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+        const chunk = new TextDecoder().decode(value);
+        
+        // Parse Gemini chunks using both standard SSE and robust regex fallback
+        const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+        let hasMatches = false;
+        for (const match of matches) {
           try {
-            const data = JSON.parse(line.slice(6));
-            text += data.choices[0]?.delta?.content || '';
-            onUpdate(cleanAIText(text));
+            text += JSON.parse(`"${match[1]}"`);
+            hasMatches = true;
           } catch (e) {}
         }
+        
+        if (hasMatches) {
+          onUpdate(cleanAIText(text));
+        } else {
+          // Standard SSE fallback
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                text += data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                onUpdate(cleanAIText(text));
+              } catch (e) {}
+            }
+          }
+        }
       }
+    } else {
+      const attempts = [
+        { provider: 'cerebras', model: 'llama-3.3-70b' },
+        { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+        { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+      ];
+
+      let lastError: any = null;
+      for (const attempt of attempts) {
+        try {
+          console.log(`🧬 streamChat: Attempting chat via ${attempt.provider} (Model: ${attempt.model})...`);
+          
+          let bodyPayload: any = {};
+          if (attempt.provider === 'gemini') {
+            bodyPayload = {
+              provider: 'gemini',
+              payload: {
+                model: attempt.model,
+                stream: true,
+                contents: [
+                  ...history.map(m => ({
+                    role: m.role === 'ai' ? 'model' : 'user',
+                    parts: [{ text: m.text || '' }]
+                  })),
+                  { role: 'user', parts: [{ text: message }] }
+                ],
+                system_instruction: {
+                  parts: [{ text: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` }]
+                }
+              }
+            };
+          } else {
+            bodyPayload = {
+              provider: attempt.provider,
+              payload: {
+                messages: [
+                  { role: 'system', content: `You are USTED Scholar AI. Use this context: ${systemContext}\n\n${CHAT_PERSONA}` },
+                  ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+                  { role: 'user', content: message }
+                ],
+                model: attempt.model,
+                stream: true
+              }
+            };
+          }
+
+          const response = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            headers: await authHeaders(),
+            body: JSON.stringify(bodyPayload)
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`${attempt.provider} gateway HTTP error: ${errText}`);
+          }
+
+          const reader = response.body?.getReader();
+          let text = '';
+          let isFirstChunk = true;
+
+          while (true) {
+            const { done, value } = await reader!.read();
+            if (done) break;
+            const chunk = new TextDecoder().decode(value);
+
+            // Stream-level error interceptor
+            if (isFirstChunk) {
+              isFirstChunk = false;
+              if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
+                throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+              }
+            }
+
+            if (attempt.provider === 'gemini') {
+              const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
+              for (const match of matches) {
+                try {
+                  text += JSON.parse(`"${match[1]}"`);
+                } catch (e) {}
+              }
+              onUpdate(cleanAIText(text));
+            } else {
+              const lines = chunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    text += data.choices?.[0]?.delta?.content || '';
+                    onUpdate(cleanAIText(text));
+                  } catch (e) {}
+                }
+              }
+            }
+          }
+
+          if (text.trim().length > 0) {
+            return;
+          }
+          throw new Error(`Empty stream response returned from ${attempt.provider}`);
+
+        } catch (err: any) {
+          console.warn(`🧬 streamChat: ${attempt.provider} attempt FAILED:`, err.message);
+          lastError = err;
+        }
+      }
+
+      throw new Error(`All chat providers failed. Last error: ${lastError?.message}`);
     }
   } catch (e) {
     console.error('Chat failed:', e);
@@ -302,32 +550,108 @@ export async function generateQuiz(fileId: string) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
   else query = query.eq('file_id', fileId);
-  const { data: cached } = await query.single();
+  const { data: cached } = await query.maybeSingle();
   const context = cached?.full_text || cached?.synthesis || '';
 
-  const response = await fetch(GATEWAY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-    body: JSON.stringify({
-      provider: 'gemini',
-      payload: {
-        model: 'gemini-2.5-flash-lite',
-        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }] }],
-        generationConfig: { responseMimeType: "application/json" }
+  if (!context) {
+    throw new Error('No course content available to generate a quiz. The document may not have been processed yet.');
+  }
+
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧠 generateQuiz: Attempting via ${attempt.provider} (${attempt.model})...`);
+      let bodyPayload: any = {};
+      
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are an academic examiner. Your job is to read the course context and generate a JSON object with a "questions" array. Each question MUST contain: "question" (string), "options" (array of 4 strings), "correctAnswer" (integer index 0-3), and "explanation" (string explaining why it is correct). Return ONLY the raw JSON block without markdown formatting or code blocks.' 
+              },
+              { 
+                role: 'user', 
+                content: `Context: ${context}` 
+              }
+            ],
+            model: attempt.model,
+            stream: false
+          }
+        };
       }
-    })
-  });
-  if (!response.ok) {
-    throw new Error(`Quiz Generation failed with status ${response.status}`);
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gateway returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(`API Error: ${data.error.message || JSON.stringify(data.error)}`);
+      }
+
+      let text = '';
+      if (attempt.provider === 'gemini') {
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error('Gemini returned no candidates');
+        }
+        text = data.candidates[0].content.parts[0].text;
+      } else {
+        text = data.choices?.[0]?.message?.content || '';
+      }
+
+      // Try parsing and validating
+      text = text.trim();
+      // Strip markdown code block if present
+      if (text.startsWith('```json')) {
+        text = text.substring(7);
+      } else if (text.startsWith('```')) {
+        text = text.substring(3);
+      }
+      if (text.endsWith('```')) {
+        text = text.substring(0, text.length - 3);
+      }
+      text = text.trim();
+
+      const parsed = JSON.parse(text);
+      if (parsed.questions && Array.isArray(parsed.questions)) {
+        return parsed;
+      } else if (Array.isArray(parsed)) {
+        return { questions: parsed };
+      } else {
+        throw new Error('JSON structure did not contain questions array');
+      }
+    } catch (err) {
+      console.warn(`⚠️ generateQuiz: ${attempt.provider} failed:`, err);
+      lastError = err;
+    }
   }
-  const data = await response.json();
-  if (data.error) {
-    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
-  }
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+
+  throw new Error(`All quiz generation attempts failed. Last error: ${lastError?.message}`);
 }
 
 // Service: Generate Flashcards
@@ -335,32 +659,110 @@ export async function generateFlashcards(fileId: string) {
   let query = supabase.from('courses').select('full_text, synthesis');
   if (isUUID(fileId)) query = query.or(`id.eq.${fileId},file_id.eq.${fileId}`);
   else query = query.eq('file_id', fileId);
-  const { data: cached } = await query.single();
+  const { data: cached } = await query.maybeSingle();
   const context = cached?.full_text || cached?.synthesis || '';
 
-  const response = await fetch(GATEWAY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-    body: JSON.stringify({
-      provider: 'gemini',
-      payload: {
-        model: 'gemini-2.5-flash-lite',
-        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. Return a "cards" array with "front" and "back".` }] }],
-        generationConfig: { responseMimeType: "application/json" }
+  if (!context) {
+    throw new Error('No course content available to generate flashcards. The document may not have been processed yet.');
+  }
+
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧠 generateFlashcards: Attempting via ${attempt.provider} (${attempt.model})...`);
+      let bodyPayload: any = {};
+
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. Return a "cards" array with "front" and "back".` }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are an academic learning designer. Your job is to read the course context and generate a JSON object with a "cards" array (minimum 10-15 cards). Each card MUST contain: "front" (a concise concept name or question) and "back" (a detailed academic explanation). Return ONLY the raw JSON block without markdown formatting or code blocks.' 
+              },
+              { 
+                role: 'user', 
+                content: `Context: ${context}` 
+              }
+            ],
+            model: attempt.model,
+            stream: false
+          }
+        };
       }
-    })
-  });
-  if (!response.ok) {
-    throw new Error(`Flashcard Generation failed with status ${response.status}`);
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gateway returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(`API Error: ${data.error.message || JSON.stringify(data.error)}`);
+      }
+
+      let text = '';
+      if (attempt.provider === 'gemini') {
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error('Gemini returned no candidates');
+        }
+        text = data.candidates[0].content.parts[0].text;
+      } else {
+        text = data.choices?.[0]?.message?.content || '';
+      }
+
+      // Try parsing and validating
+      text = text.trim();
+      // Strip markdown code block if present
+      if (text.startsWith('```json')) {
+        text = text.substring(7);
+      } else if (text.startsWith('```')) {
+        text = text.substring(3);
+      }
+      if (text.endsWith('```')) {
+        text = text.substring(0, text.length - 3);
+      }
+      text = text.trim();
+
+      const parsed = JSON.parse(text);
+      if (parsed.cards && Array.isArray(parsed.cards)) {
+        return parsed;
+      } else if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+        return { cards: parsed.flashcards };
+      } else if (Array.isArray(parsed)) {
+        return { cards: parsed };
+      } else {
+        throw new Error('JSON structure did not contain cards array');
+      }
+    } catch (err) {
+      console.warn(`⚠️ generateFlashcards: ${attempt.provider} failed:`, err);
+      lastError = err;
+    }
   }
-  const data = await response.json();
-  if (data.error) {
-    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
-  }
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+
+  throw new Error(`All flashcard generation attempts failed. Last error: ${lastError?.message}`);
 }
 
 // Service: Generate Smart Chat Title
@@ -368,9 +770,9 @@ export async function generateThreadTitle(userMessage: string) {
   try {
     const response = await fetch(GATEWAY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      headers: await authHeaders(),
       body: JSON.stringify({
-        provider: 'groq',
+        provider: 'cerebras',
         payload: {
           messages: [
             { 
@@ -382,7 +784,8 @@ export async function generateThreadTitle(userMessage: string) {
               content: `<user_message>\n${userMessage}\n</user_message>` 
             }
           ],
-          model: 'llama-3.3-70b-versatile'
+          model: 'llama-3.3-70b',
+          stream: false
         }
       })
     });
@@ -390,7 +793,7 @@ export async function generateThreadTitle(userMessage: string) {
     if (!response.ok) throw new Error("Title generation gateway failed");
 
     const data = await response.json();
-    let title = data.choices[0]?.message?.content?.trim() || '';
+    let title = data.choices?.[0]?.message?.content?.trim() || '';
     
     // Strip quotes
     title = title.replace(/['"]/g, '');

@@ -36,6 +36,7 @@ serve(async (req) => {
       const method = payload.stream ? 'streamGenerateContent' : 'generateContent'
       url = `https://generativelanguage.googleapis.com/v1beta/models/${payload.model}:${method}?key=${geminiKey}`
       delete payload.model
+      delete payload.stream
     }
 
     if (!apiKey && provider !== 'gemini') throw new Error(`Missing ${provider} API key`)

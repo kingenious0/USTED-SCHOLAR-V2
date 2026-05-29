@@ -1,16 +1,31 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
-import LandingScreen from './screens/LandingScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
-import LibraryScreen from './screens/LibraryScreen';
-import HubScreen from './screens/HubScreen';
-import QuizScreen from './screens/QuizScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import AdminScreen from './screens/AdminScreen';
-import FlashcardScreen from './screens/FlashcardScreen';
 import SideNavBar from './components/navigation/SideNavBar';
 import BottomNavBar from './components/navigation/BottomNavBar';
 import { motion, AnimatePresence } from 'motion/react';
+import { Loader2 } from 'lucide-react';
+
+// Lazy-load screen components to optimize bundle size and FCP/LCP performance
+const LandingScreen = lazy(() => import('./screens/LandingScreen'));
+const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen'));
+const LibraryScreen = lazy(() => import('./screens/LibraryScreen'));
+const HubScreen = lazy(() => import('./screens/HubScreen'));
+const QuizScreen = lazy(() => import('./screens/QuizScreen'));
+const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
+const AdminScreen = lazy(() => import('./screens/AdminScreen'));
+const FlashcardScreen = lazy(() => import('./screens/FlashcardScreen'));
+
+// Premium, scientifically-grounded loading fallback for smooth workspace transitions
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--bg-primary)] space-y-4">
+    <div className="relative">
+      <div className="absolute inset-0 bg-electric-blue/20 blur-xl rounded-full animate-pulse" />
+      <Loader2 className="w-10 h-10 text-electric-blue animate-spin relative z-10" />
+    </div>
+    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-tertiary)] animate-pulse">Loading Workspace...</p>
+  </div>
+);
 
 function AppContent() {
   const location = useLocation();
@@ -29,17 +44,19 @@ function AppContent() {
             transition={{ duration: 0.3 }}
             className="min-h-screen"
           >
-            <Routes location={location}>
-              <Route path="/" element={<LandingScreen />} />
-              <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="/dashboard" element={<Navigate to="/library" replace />} />
-              <Route path="/library" element={<LibraryScreen />} />
-              <Route path="/hub" element={<HubScreen />} />
-              <Route path="/quiz" element={<QuizScreen />} />
-              <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="/admin" element={<AdminScreen />} />
-              <Route path="/flashcards" element={<FlashcardScreen />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes location={location}>
+                <Route path="/" element={<LandingScreen />} />
+                <Route path="/onboarding" element={<OnboardingScreen />} />
+                <Route path="/dashboard" element={<Navigate to="/library" replace />} />
+                <Route path="/library" element={<LibraryScreen />} />
+                <Route path="/hub" element={<HubScreen />} />
+                <Route path="/quiz" element={<QuizScreen />} />
+                <Route path="/profile" element={<ProfileScreen />} />
+                <Route path="/admin" element={<AdminScreen />} />
+                <Route path="/flashcards" element={<FlashcardScreen />} />
+              </Routes>
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>

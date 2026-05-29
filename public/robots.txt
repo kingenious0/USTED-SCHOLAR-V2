@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /hub
+
+Sitemap: https://ustedscholar.kingenious.xyz/sitemap.xml
