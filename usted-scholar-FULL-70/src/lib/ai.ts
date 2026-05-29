@@ -217,7 +217,9 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
     { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
-    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+    { provider: 'groq', model: 'mixtral-8x7b-32768' },
+    { provider: 'groq', model: 'gemma2-9b-it' }
   ];
 
   let lastError: any = null;
@@ -438,7 +440,9 @@ export async function streamChat(fileId: string, message: string, history: any[]
         { provider: 'cerebras', model: 'llama3.1-70b' },
         { provider: 'cerebras', model: 'llama3.1-8b' },
         { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
-        { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+        { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+        { provider: 'groq', model: 'mixtral-8x7b-32768' },
+        { provider: 'groq', model: 'gemma2-9b-it' }
       ];
 
       let lastError: any = null;
@@ -567,7 +571,9 @@ export async function generateQuiz(fileId: string) {
     { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
-    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+    { provider: 'groq', model: 'mixtral-8x7b-32768' },
+    { provider: 'groq', model: 'gemma2-9b-it' }
   ];
 
   let lastError: any = null;
@@ -678,7 +684,9 @@ export async function generateFlashcards(fileId: string) {
     { provider: 'cerebras', model: 'llama3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
-    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' },
+    { provider: 'groq', model: 'mixtral-8x7b-32768' },
+    { provider: 'groq', model: 'gemma2-9b-it' }
   ];
 
   let lastError: any = null;
