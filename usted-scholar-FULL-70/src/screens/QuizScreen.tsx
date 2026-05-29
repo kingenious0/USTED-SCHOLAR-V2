@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CheckCircle2, Flame, Award, Timer, Lightbulb, ArrowRight, X, Sparkles, MessageSquareQuote, Loader2, Trophy, Brain } from 'lucide-react';
+import { CheckCircle2, Flame, Award, Timer, Lightbulb, ArrowRight, X, Sparkles, MessageSquareQuote, Loader2, Trophy, Brain, AlertCircle } from 'lucide-react';
 import { generateQuiz } from '../lib/ai';
 
 export default function QuizScreen() {
@@ -27,7 +27,13 @@ export default function QuizScreen() {
       }
       try {
         const data = await generateQuiz(targetId);
-        if (data.questions) setQuestions(data.questions);
+        let parsedQuestions: any[] = [];
+        if (Array.isArray(data)) {
+          parsedQuestions = data;
+        } else if (data && typeof data === 'object') {
+          parsedQuestions = data.questions || data.quizzes || Object.values(data).find(Array.isArray) || [];
+        }
+        setQuestions(parsedQuestions);
       } catch (err) {
         console.error('Quiz Error:', err);
       } finally {
@@ -64,6 +70,22 @@ export default function QuizScreen() {
       </div>
       <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Drafting your exam...</h2>
       <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs">{selectedFile?.name || 'Analyzing material'}</p>
+    </div>
+  );
+
+  if (!loading && questions.length === 0) return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 text-center transition-colors duration-300">
+      <div className="w-20 h-20 rounded-[2.5rem] bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center mb-6">
+        <AlertCircle className="w-10 h-10 text-sunset-orange animate-pulse" />
+      </div>
+      <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">No quiz questions found</h2>
+      <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs mb-8 max-w-sm leading-relaxed">
+        We couldn't generate quiz questions for this module. Make sure the course has processed textbook text first.
+      </p>
+      <Link to="/hub"
+        className="px-8 py-3.5 bg-gradient-to-r from-electric-blue to-blue-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-electric-blue/20 active:scale-95 transition-all">
+        Back to Hub
+      </Link>
     </div>
   );
 

@@ -3,7 +3,6 @@ import { supabase } from './supabase';
 import Groq from 'groq-sdk';
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { extractTextFromPdf } from './pdfUtils';
-import * as pdfjs from 'pdfjs-dist';
 
 const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
 
@@ -558,29 +557,101 @@ export async function generateQuiz(fileId: string) {
     throw new Error('No course content available to generate a quiz. The document may not have been processed yet.');
   }
 
-  const response = await fetch(GATEWAY_URL, {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({
-      provider: 'gemini',
-      payload: {
-        model: 'gemini-2.5-flash-lite',
-        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }] }],
-        generationConfig: { responseMimeType: "application/json" }
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧠 generateQuiz: Attempting via ${attempt.provider} (${attempt.model})...`);
+      let bodyPayload: any = {};
+      
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 5 academic MCQs in JSON. Return a "questions" array where each object has: "question", "options" (4 strings), "correctAnswer" (index), and "explanation".` }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are an academic examiner. Your job is to read the course context and generate a JSON object with a "questions" array. Each question MUST contain: "question" (string), "options" (array of 4 strings), "correctAnswer" (integer index 0-3), and "explanation" (string explaining why it is correct). Return ONLY the raw JSON block without markdown formatting or code blocks.' 
+              },
+              { 
+                role: 'user', 
+                content: `Context: ${context}` 
+              }
+            ],
+            model: attempt.model,
+            stream: false
+          }
+        };
       }
-    })
-  });
-  if (!response.ok) {
-    throw new Error(`Quiz Generation failed with status ${response.status}`);
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gateway returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(`API Error: ${data.error.message || JSON.stringify(data.error)}`);
+      }
+
+      let text = '';
+      if (attempt.provider === 'gemini') {
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error('Gemini returned no candidates');
+        }
+        text = data.candidates[0].content.parts[0].text;
+      } else {
+        text = data.choices?.[0]?.message?.content || '';
+      }
+
+      // Try parsing and validating
+      text = text.trim();
+      // Strip markdown code block if present
+      if (text.startsWith('```json')) {
+        text = text.substring(7);
+      } else if (text.startsWith('```')) {
+        text = text.substring(3);
+      }
+      if (text.endsWith('```')) {
+        text = text.substring(0, text.length - 3);
+      }
+      text = text.trim();
+
+      const parsed = JSON.parse(text);
+      if (parsed.questions && Array.isArray(parsed.questions)) {
+        return parsed;
+      } else if (Array.isArray(parsed)) {
+        return { questions: parsed };
+      } else {
+        throw new Error('JSON structure did not contain questions array');
+      }
+    } catch (err) {
+      console.warn(`⚠️ generateQuiz: ${attempt.provider} failed:`, err);
+      lastError = err;
+    }
   }
-  const data = await response.json();
-  if (data.error) {
-    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
-  }
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+
+  throw new Error(`All quiz generation attempts failed. Last error: ${lastError?.message}`);
 }
 
 // Service: Generate Flashcards
@@ -595,29 +666,103 @@ export async function generateFlashcards(fileId: string) {
     throw new Error('No course content available to generate flashcards. The document may not have been processed yet.');
   }
 
-  const response = await fetch(GATEWAY_URL, {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({
-      provider: 'gemini',
-      payload: {
-        model: 'gemini-2.5-flash-lite',
-        contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. Return a "cards" array with "front" and "back".` }] }],
-        generationConfig: { responseMimeType: "application/json" }
+  const attempts = [
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'gemini', model: 'gemini-1.5-flash' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  let lastError: any = null;
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧠 generateFlashcards: Attempting via ${attempt.provider} (${attempt.model})...`);
+      let bodyPayload: any = {};
+
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            contents: [{ parts: [{ text: `Context: ${context}\n\nGenerate 15 academic flashcards in JSON. Return a "cards" array with "front" and "back".` }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are an academic learning designer. Your job is to read the course context and generate a JSON object with a "cards" array (minimum 10-15 cards). Each card MUST contain: "front" (a concise concept name or question) and "back" (a detailed academic explanation). Return ONLY the raw JSON block without markdown formatting or code blocks.' 
+              },
+              { 
+                role: 'user', 
+                content: `Context: ${context}` 
+              }
+            ],
+            model: attempt.model,
+            stream: false
+          }
+        };
       }
-    })
-  });
-  if (!response.ok) {
-    throw new Error(`Flashcard Generation failed with status ${response.status}`);
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gateway returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(`API Error: ${data.error.message || JSON.stringify(data.error)}`);
+      }
+
+      let text = '';
+      if (attempt.provider === 'gemini') {
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error('Gemini returned no candidates');
+        }
+        text = data.candidates[0].content.parts[0].text;
+      } else {
+        text = data.choices?.[0]?.message?.content || '';
+      }
+
+      // Try parsing and validating
+      text = text.trim();
+      // Strip markdown code block if present
+      if (text.startsWith('```json')) {
+        text = text.substring(7);
+      } else if (text.startsWith('```')) {
+        text = text.substring(3);
+      }
+      if (text.endsWith('```')) {
+        text = text.substring(0, text.length - 3);
+      }
+      text = text.trim();
+
+      const parsed = JSON.parse(text);
+      if (parsed.cards && Array.isArray(parsed.cards)) {
+        return parsed;
+      } else if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+        return { cards: parsed.flashcards };
+      } else if (Array.isArray(parsed)) {
+        return { cards: parsed };
+      } else {
+        throw new Error('JSON structure did not contain cards array');
+      }
+    } catch (err) {
+      console.warn(`⚠️ generateFlashcards: ${attempt.provider} failed:`, err);
+      lastError = err;
+    }
   }
-  const data = await response.json();
-  if (data.error) {
-    throw new Error(`Gemini API Error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error(`Gemini API returned no candidates. Response: ${JSON.stringify(data)}`);
-  }
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+
+  throw new Error(`All flashcard generation attempts failed. Last error: ${lastError?.message}`);
 }
 
 // Service: Generate Smart Chat Title

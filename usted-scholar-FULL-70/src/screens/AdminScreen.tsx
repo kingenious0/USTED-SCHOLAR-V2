@@ -5,8 +5,7 @@ import { Upload, FileText, CheckCircle2, AlertCircle, AlertTriangle, Loader2, Da
 import { Link } from 'react-router-dom';
 import { ACADEMIC_DATA } from '../lib/academicData';
 import { extractTextFromPdf } from '../lib/pdfUtils';
-import * as pdfjs from 'pdfjs-dist';
-import { jsPDF } from 'jspdf';
+import { generateSynthesis } from '../lib/ai';
 
 const GATEWAY_URL = 'https://wruymvxttqlxgcvwfcop.supabase.co/functions/v1/ai-gateway';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -136,6 +135,15 @@ export default function AdminScreen() {
 
   const heavyCompress = async (file: File): Promise<Blob> => {
     const arrayBuffer = await file.arrayBuffer();
+    
+    // Dynamic imports of heavy PDF utility engines on demand
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url
+    ).toString();
+    const { jsPDF } = await import('jspdf');
+
     const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
     const outPdf = new jsPDF({ compress: true });
     const totalPages = pdf.numPages;

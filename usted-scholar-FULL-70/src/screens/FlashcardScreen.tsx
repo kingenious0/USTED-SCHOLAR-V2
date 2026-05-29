@@ -24,7 +24,13 @@ export default function FlashcardScreen() {
       }
       try {
         const data = await generateFlashcards(targetId);
-        if (data.cards) setCards(data.cards);
+        let parsedCards: any[] = [];
+        if (Array.isArray(data)) {
+          parsedCards = data;
+        } else if (data && typeof data === 'object') {
+          parsedCards = data.cards || data.flashcards || Object.values(data).find(Array.isArray) || [];
+        }
+        setCards(parsedCards);
       } catch (err) {
         console.error('Flashcard Error:', err);
       } finally {
@@ -55,6 +61,22 @@ export default function FlashcardScreen() {
       </div>
       <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Building your study deck...</h2>
       <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs">{selectedFile?.name || 'Extracting concepts'}</p>
+    </div>
+  );
+
+  if (!loading && cards.length === 0) return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 text-center transition-colors">
+      <div className="w-20 h-20 rounded-[2.5rem] bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center mb-6">
+        <AlertCircle className="w-10 h-10 text-sunset-orange animate-pulse" />
+      </div>
+      <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">No flashcards found</h2>
+      <p className="text-[var(--text-tertiary)] font-bold uppercase tracking-widest text-xs mb-8 max-w-sm leading-relaxed">
+        We couldn't generate study cards for this module. Make sure the course has processed textbook text first.
+      </p>
+      <Link to="/hub"
+        className="px-8 py-3.5 bg-gradient-to-r from-electric-blue to-blue-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-electric-blue/20 active:scale-95 transition-all">
+        Back to Hub
+      </Link>
     </div>
   );
 
