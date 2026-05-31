@@ -270,11 +270,28 @@ export default function AdminScreen() {
 
       if (dbError) throw dbError;
 
+      // Pre-generate the synthesis if text was successfully extracted!
+      if (extractedText) {
+        setUploadStatus({ type: null, message: 'Pre-generating AI Study Guide... 🧠' });
+        try {
+          await generateSynthesis(courseFileId, (text, stage) => {
+            if (stage) {
+              setUploadStatus({ 
+                type: null, 
+                message: `Pre-generating AI Study Guide: ${stage}... 🧠` 
+              });
+            }
+          });
+        } catch (synthErr) {
+          console.warn("Failed to pre-generate synthesis during upload:", synthErr);
+        }
+      }
+
       // Cloud OCR is now fully decommissioned since we index text locally on the client!
       const charCount = extractedText ? extractedText.length : 0;
       setUploadStatus({ 
         type: 'success', 
-        message: `Success! Course uploaded and ${(charCount / 1000).toFixed(1)}k characters indexed locally.` 
+        message: `Success! Course uploaded, ${(charCount / 1000).toFixed(1)}k characters indexed and AI Study Guide pre-generated.` 
       });
 
       setName('');

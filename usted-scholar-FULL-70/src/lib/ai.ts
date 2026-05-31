@@ -782,46 +782,94 @@ export async function generateFlashcards(fileId: string) {
 }
 
 // Service: Generate Smart Chat Title
-export async function generateThreadTitle(userMessage: string) {
-  try {
-    const response = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: await authHeaders(),
-      body: JSON.stringify({
-        provider: 'cerebras',
-        payload: {
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a professional thread title generator. Your ONLY task is to read the user\'s first message inside the <user_message> tag and generate a highly concise, punchy 3-5 word title summarizing what they want to discuss. \n\nCRITICAL RULE: DO NOT answer the user\'s message, DO NOT try to assist, and DO NOT ask questions. Simply output the 3-5 word title and nothing else. No quotes, no prefix.' 
-            }, 
-            { 
-              role: 'user', 
-              content: `<user_message>\n${userMessage}\n</user_message>` 
-            }
-          ],
-          model: 'llama-3.3-70b',
-          stream: false
-        }
-      })
-    });
-
-    if (!response.ok) throw new Error("Title generation gateway failed");
-
-    const data = await response.json();
-    let title = data.choices?.[0]?.message?.content?.trim() || '';
-    
-    // Strip quotes
-    title = title.replace(/['"]/g, '');
-    
-    // Security check: If the model ignored instructions and returned a long paragraph, fallback to slicing the user message!
-    if (title.split(' ').length > 8) {
-      return userMessage.trim().slice(0, 30) + '...';
-    }
-    
-    return title || 'New Chat Session';
-  } catch (e) {
-    console.warn("Thread title generation failed, falling back to sliced message:", e);
-    return userMessage.trim().slice(0, 30) + '...';
+export async function generateThreadTitle(userMessage: string, courseName: string = 'Session') {
+  const normalized = userMessage.toLowerCase();
+  
+  // 1. Instant Static Resolution for standard study center buttons (saves API calls & executes instantly)
+  if (normalized.includes('summarize the key concepts') || normalized.includes('summarize in bullet points')) {
+    return `${courseName} Summary`;
   }
+  if (normalized.includes('quiz') || normalized.includes('take quiz') || normalized.includes('mcqs')) {
+    return `${courseName} Quiz`;
+  }
+  if (normalized.includes('flashcard') || normalized.includes('flash card')) {
+    return `${courseName} Flashcards`;
+  }
+
+  // 2. AI Fallback Chain (Gemini first for extreme reliability & speed, then Cerebras, then Groq)
+  const attempts = [
+    { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      console.log(`🧬 SmartTitle: Attempting thread title generation via ${attempt.provider} (${attempt.model})...`);
+      let bodyPayload: any = {};
+      
+      if (attempt.provider === 'gemini') {
+        bodyPayload = {
+          provider: 'gemini',
+          payload: {
+            model: attempt.model,
+            contents: [{ 
+              parts: [{ 
+                text: `You are a thread title generator. Read this user message: "${userMessage}"\n\nGenerate a highly concise 2-4 word title summarizing this message. DO NOT write a sentence, DO NOT include quotes or prefixes, and DO NOT use generic phrases like "User Inquiry" or "Question". Return only the 2-4 words.` 
+              }] 
+            }]
+          }
+        };
+      } else {
+        bodyPayload = {
+          provider: attempt.provider,
+          payload: {
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are a thread title generator. Generate a highly concise, punchy 2-4 word title summarizing the user\'s message. No quotes, no prefixes, no sentences.' 
+              }, 
+              { 
+                role: 'user', 
+                content: userMessage 
+              }
+            ],
+            model: attempt.model,
+            stream: false
+          }
+        };
+      }
+
+      const response = await fetch(GATEWAY_URL, {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        let title = '';
+        if (attempt.provider === 'gemini') {
+          title = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else {
+          title = data.choices?.[0]?.message?.content || '';
+        }
+        
+        title = title.trim().replace(/['"]/g, ''); // strip quotes
+        
+        // Ensure the title is short and valid
+        if (title && title.split(' ').length <= 6 && !title.toLowerCase().includes('error')) {
+          console.log(`🧬 SmartTitle: Success! Generated title: "${title}" via ${attempt.provider}`);
+          return title;
+        }
+      }
+    } catch (err: any) {
+      console.warn(`SmartTitle: ${attempt.provider} failed:`, err.message);
+    }
+  }
+
+  // 3. Smart Static Fallback (If all AI calls fail)
+  const words = userMessage.trim().split(' ').slice(0, 4).join(' ');
+  const cleanTitle = words.length > 25 ? words.slice(0, 25) + '...' : words;
+  return cleanTitle && cleanTitle.length > 3 ? `${cleanTitle}...` : `${courseName} Chat`;
 }

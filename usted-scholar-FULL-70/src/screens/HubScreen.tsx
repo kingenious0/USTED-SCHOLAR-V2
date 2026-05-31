@@ -199,7 +199,7 @@ export default function HubScreen() {
           setThreads(prev => prev.map(t => t.id === activeThreadId ? { ...t, isGeneratingTitle: true } : t));
 
           import('../lib/ai').then(({ generateThreadTitle }) => {
-            generateThreadTitle(firstUserMsg.text).then(async (newTitle) => {
+            generateThreadTitle(firstUserMsg.text, courseName).then(async (newTitle) => {
               const { error } = await supabase
                 .from('chat_threads')
                 .update({ title: newTitle })
@@ -413,7 +413,7 @@ export default function HubScreen() {
   return (
     <div className="h-[100dvh] lg:h-screen flex flex-col lg:flex-row bg-[var(--bg-primary)] overflow-hidden relative transition-colors duration-300">
       {/* Left: Synthesis Panel */}
-      <section className={`${activeTab === 'synthesis' ? 'flex-1' : 'flex-none'} flex flex-col min-h-0 border-r border-[var(--border-color)] relative transition-all duration-300`}>
+      <section className={`${activeTab === 'synthesis' ? 'flex-1' : 'flex-none'} lg:flex-1 flex flex-col min-h-0 border-r border-[var(--border-color)] relative transition-all duration-300`}>
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-electric-blue/5 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Header */}
@@ -517,7 +517,7 @@ export default function HubScreen() {
         {/* Synthesis Content */}
         <div className={`flex-1 overflow-y-auto p-6 lg:p-12 scroll-smooth bg-[var(--bg-primary)] custom-scrollbar relative z-10 ${activeTab === 'chat' ? 'hidden lg:block' : 'block'}`}>
           <div className="max-w-3xl mx-auto">
-            {isSynthesizing ? (
+            {isSynthesizing && !synthesis ? (
               <div className="flex flex-col items-center justify-center h-full py-32 space-y-6 text-center">
                 <div className="relative">
                   <div className="absolute inset-0 bg-electric-blue/20 blur-2xl rounded-full animate-pulse" />
@@ -601,7 +601,7 @@ export default function HubScreen() {
       </section>
 
       {/* Right: AI Assistant */}
-      <aside className={`w-full lg:w-[420px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'} ${isFocusMode ? 'lg:hidden' : ''}`}>
+      <aside className={`w-full lg:w-[420px] ${activeTab === 'chat' ? 'flex-1' : 'flex-none'} lg:flex-none min-h-0 lg:h-full flex flex-col bg-[var(--bg-secondary)] border-l border-[var(--border-color)] relative z-20 pb-24 lg:pb-0 ${activeTab === 'synthesis' ? 'hidden lg:flex' : 'flex'} ${isFocusMode ? 'lg:hidden' : ''}`}>
         {/* Desktop Header */}
         <header className="p-5 border-b border-[var(--border-color)] hidden lg:flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -620,7 +620,7 @@ export default function HubScreen() {
             <select
               value={activeThreadId}
               onChange={(e) => switchThread(e.target.value)}
-              className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider max-w-[120px] truncate outline-none focus:ring-1 focus:ring-electric-blue cursor-pointer"
+              className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider max-w-[180px] lg:max-w-[220px] truncate outline-none focus:ring-1 focus:ring-electric-blue cursor-pointer"
             >
               {threads.map(t => (
                 <option key={t.id} value={t.id}>{t.title}</option>
