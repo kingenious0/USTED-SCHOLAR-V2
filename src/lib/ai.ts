@@ -475,13 +475,15 @@ export async function streamChat(fileId: string, message: string, history: any[]
               }
             };
           } else {
-            const providerContext = cached?.synthesis || (systemContext.length > 40000 ? systemContext.substring(0, 40000) : systemContext);
+            const rawContext = cached?.synthesis || systemContext;
+            const providerContext = rawContext.length > 12000 ? rawContext.substring(0, 12000) : rawContext;
+            const optimizedHistory = history.slice(-6);
             bodyPayload = {
               provider: attempt.provider,
               payload: {
                 messages: [
                   { role: 'system', content: `You are USTED Scholar AI. Use this context: ${providerContext}\n\n${CHAT_PERSONA}` },
-                  ...history.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+                  ...optimizedHistory.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
                   { role: 'user', content: message }
                 ],
                 model: attempt.model,
@@ -608,7 +610,8 @@ export async function generateQuiz(fileId: string) {
           }
         };
       } else {
-        const providerContext = cached?.synthesis || (context.length > 40000 ? context.substring(0, 40000) : context);
+        const rawContext = cached?.synthesis || context;
+        const providerContext = rawContext.length > 12000 ? rawContext.substring(0, 12000) : rawContext;
         bodyPayload = {
           provider: attempt.provider,
           payload: {
@@ -720,7 +723,8 @@ export async function generateFlashcards(fileId: string) {
           }
         };
       } else {
-        const providerContext = cached?.synthesis || (context.length > 40000 ? context.substring(0, 40000) : context);
+        const rawContext = cached?.synthesis || context;
+        const providerContext = rawContext.length > 12000 ? rawContext.substring(0, 12000) : rawContext;
         bodyPayload = {
           provider: attempt.provider,
           payload: {
