@@ -276,36 +276,45 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
       const reader = response.body?.getReader();
       let text = '';
       let isFirstChunk = true;
+      let buffer = '';
+      let lastProcessedIndex = 0;
 
       while (true) {
         const { done, value } = await reader!.read();
         if (done) break;
-        const chunk = new TextDecoder().decode(value);
-        console.log(`🧬 performSynthesis: Chunk received from ${attempt.provider}:`, chunk.slice(0, 150) + (chunk.length > 150 ? '...' : ''));
+        buffer += new TextDecoder().decode(value);
+        console.log(`🧬 performSynthesis: Chunk received from ${attempt.provider}:`, buffer.slice(-150));
 
         // Check for stream-level errors wrapped inside a 200 HTTP code (like Cerebras' model_not_found or Groq's rate limit)
         if (isFirstChunk) {
           isFirstChunk = false;
-          if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
-            throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+          if (buffer.includes('model_not_found') || buffer.includes('not_found_error') || buffer.includes('does not exist') || buffer.includes('rate_limit_exceeded') || buffer.includes('Rate limit reached')) {
+            throw new Error(`Stream error from ${attempt.provider}: ${buffer}`);
           }
         }
 
         if (attempt.provider === 'gemini') {
-          // Robust JSON regex parsing for Gemini stream chunk candidates
-          const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
-          for (const match of matches) {
+          const regex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+          let match;
+          regex.lastIndex = lastProcessedIndex;
+          while ((match = regex.exec(buffer)) !== null) {
             try {
               text += JSON.parse(`"${match[1]}"`);
+              lastProcessedIndex = regex.lastIndex;
             } catch (e) {}
           }
           onUpdate(cleanAIText(text), 'Writing...');
         } else {
-          const lines = chunk.split('\n');
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // keep the last potentially incomplete line in buffer
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            if (trimmed.startsWith('data: ')) {
+              const cleanedLine = trimmed.slice(6).trim();
+              if (cleanedLine === '[DONE]') continue;
               try {
-                const data = JSON.parse(line.slice(6));
+                const data = JSON.parse(cleanedLine);
                 let content = data.choices?.[0]?.delta?.content || '';
                 text += content;
                 onUpdate(cleanAIText(text), 'Writing...');
@@ -498,34 +507,44 @@ export async function streamChat(fileId: string, message: string, history: any[]
           const reader = response.body?.getReader();
           let text = '';
           let isFirstChunk = true;
+          let buffer = '';
+          let lastProcessedIndex = 0;
 
           while (true) {
             const { done, value } = await reader!.read();
             if (done) break;
-            const chunk = new TextDecoder().decode(value);
+            buffer += new TextDecoder().decode(value);
 
             // Stream-level error interceptor
             if (isFirstChunk) {
               isFirstChunk = false;
-              if (chunk.includes('model_not_found') || chunk.includes('not_found_error') || chunk.includes('does not exist') || chunk.includes('rate_limit_exceeded') || chunk.includes('Rate limit reached')) {
-                throw new Error(`Stream error from ${attempt.provider}: ${chunk}`);
+              if (buffer.includes('model_not_found') || buffer.includes('not_found_error') || buffer.includes('does not exist') || buffer.includes('rate_limit_exceeded') || buffer.includes('Rate limit reached')) {
+                throw new Error(`Stream error from ${attempt.provider}: ${buffer}`);
               }
             }
 
             if (attempt.provider === 'gemini') {
-              const matches = chunk.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g);
-              for (const match of matches) {
+              const regex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+              let match;
+              regex.lastIndex = lastProcessedIndex;
+              while ((match = regex.exec(buffer)) !== null) {
                 try {
                   text += JSON.parse(`"${match[1]}"`);
+                  lastProcessedIndex = regex.lastIndex;
                 } catch (e) {}
               }
               onUpdate(cleanAIText(text));
             } else {
-              const lines = chunk.split('\n');
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // keep the last potentially incomplete line in buffer
               for (const line of lines) {
-                if (line.startsWith('data: ')) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                if (trimmed.startsWith('data: ')) {
+                  const cleanedLine = trimmed.slice(6).trim();
+                  if (cleanedLine === '[DONE]') continue;
                   try {
-                    const data = JSON.parse(line.slice(6));
+                    const data = JSON.parse(cleanedLine);
                     text += data.choices?.[0]?.delta?.content || '';
                     onUpdate(cleanAIText(text));
                   } catch (e) {}
