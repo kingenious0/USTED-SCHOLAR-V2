@@ -213,13 +213,12 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama3.1-70b' },
-    { provider: 'cerebras', model: 'llama3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.1-70b' },
+    { provider: 'cerebras', model: 'llama-3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
-    { provider: 'groq', model: 'mixtral-8x7b-32768' },
-    { provider: 'groq', model: 'gemma2-9b-it' }
+    { provider: 'groq', model: 'llama-3.1-8b-instant' }
   ];
 
   let lastError: any = null;
@@ -446,12 +445,11 @@ export async function streamChat(fileId: string, message: string, history: any[]
     } else {
       const attempts = [
         { provider: 'cerebras', model: 'llama-3.3-70b' },
-        { provider: 'cerebras', model: 'llama3.1-70b' },
-        { provider: 'cerebras', model: 'llama3.1-8b' },
+        { provider: 'cerebras', model: 'llama-3.1-70b' },
+        { provider: 'cerebras', model: 'llama-3.1-8b' },
         { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
         { provider: 'groq', model: 'llama-3.3-70b-versatile' },
-        { provider: 'groq', model: 'mixtral-8x7b-32768' },
-        { provider: 'groq', model: 'gemma2-9b-it' }
+        { provider: 'groq', model: 'llama-3.1-8b-instant' }
       ];
 
       let lastError: any = null;
@@ -588,13 +586,12 @@ export async function generateQuiz(fileId: string) {
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama3.1-70b' },
-    { provider: 'cerebras', model: 'llama3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.1-70b' },
+    { provider: 'cerebras', model: 'llama-3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
-    { provider: 'groq', model: 'mixtral-8x7b-32768' },
-    { provider: 'groq', model: 'gemma2-9b-it' }
+    { provider: 'groq', model: 'llama-3.1-8b-instant' }
   ];
 
   let lastError: any = null;
@@ -701,13 +698,12 @@ export async function generateFlashcards(fileId: string) {
 
   const attempts = [
     { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama3.1-70b' },
-    { provider: 'cerebras', model: 'llama3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.1-70b' },
+    { provider: 'cerebras', model: 'llama-3.1-8b' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
-    { provider: 'groq', model: 'mixtral-8x7b-32768' },
-    { provider: 'groq', model: 'gemma2-9b-it' }
+    { provider: 'groq', model: 'llama-3.1-8b-instant' }
   ];
 
   let lastError: any = null;
@@ -821,7 +817,7 @@ export async function generateThreadTitle(userMessage: string, courseName: strin
   const attempts = [
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+    { provider: 'groq', model: 'llama-3.1-8b-instant' }
   ];
 
   for (const attempt of attempts) {
