@@ -40,28 +40,49 @@ async function test() {
   console.log('⚡ Dispatched query to Cerebras AI Gateway...');
   
   try {
-    const response = await fetch(GATEWAY_URL, {
+    // Test Groq with Streaming
+    const groqRes = await fetch(GATEWAY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}` // use anon key
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
       body: JSON.stringify({
-        provider: 'cerebras',
+        provider: 'groq',
         payload: {
-          messages: [
-            { role: 'system', content: `You are the USTED Scholar AI. Senior Academic Mentor.` },
-            { role: 'user', content: course.full_text.substring(0, 10000) } // Send a small subset to test
-          ],
-          model: 'llama3.1-8b',
-          stream: false // Turn off stream to get clean json response in Node
+          messages: [{ role: 'user', content: 'hello' }],
+          model: 'llama-3.3-70b-versatile',
+          stream: true
         }
       })
     });
+    console.log(`Groq Stream Status: ${groqRes.status}`);
+    const groqReader = groqRes.body;
+    if (groqReader) {
+      for await (const chunk of groqReader) {
+        const text = new TextDecoder().decode(chunk as any);
+        console.log(`Groq Chunk:`, text);
+      }
+    }
 
-    console.log(`Gateway Response Status: ${response.status} ${response.statusText}`);
-    const resText = await response.text();
-    console.log(`Gateway Response:\n`, resText);
+    // Test Gemini with Streaming
+    const geminiRes = await fetch(GATEWAY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
+      body: JSON.stringify({
+        provider: 'gemini',
+        payload: {
+          contents: [{ parts: [{ text: 'hello' }] }],
+          model: 'gemini-2.5-flash-lite',
+          stream: true
+        }
+      })
+    });
+    console.log(`Gemini Stream Status: ${geminiRes.status}`);
+    const geminiReader = geminiRes.body;
+    if (geminiReader) {
+      for await (const chunk of geminiReader) {
+        const text = new TextDecoder().decode(chunk as any);
+        console.log(`Gemini Chunk:`, text);
+      }
+    }
 
   } catch (err: any) {
     console.error('❌ Request error:', err.message);
