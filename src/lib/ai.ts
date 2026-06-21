@@ -513,7 +513,9 @@ export async function streamChat(fileId: string, message: string, history: any[]
           while (true) {
             const { done, value } = await reader!.read();
             if (done) break;
-            buffer += new TextDecoder().decode(value);
+            const decodedChunk = new TextDecoder().decode(value);
+            console.log(`🧬 streamChat [${attempt.provider}]: Raw chunk:`, decodedChunk);
+            buffer += decodedChunk;
 
             // Stream-level error interceptor
             if (isFirstChunk) {
