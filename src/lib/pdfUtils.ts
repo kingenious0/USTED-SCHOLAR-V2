@@ -149,7 +149,8 @@ export async function extractTextFromPdf(
       await scheduler.terminate();
     }
 
-    return fullText.trim();
+    // Sanitize text by removing null bytes (\u0000) which cause PostgreSQL "unsupported Unicode escape sequence" insert errors
+    return fullText.replace(/\u0000/g, '').trim();
   } catch (error) {
     console.error('PDF Extraction Error:', error);
     return '';
