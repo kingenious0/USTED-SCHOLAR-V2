@@ -212,9 +212,8 @@ async function performSynthesis(fileId: string, textToProcess: string, onUpdate:
   onUpdate('', 'Secure AI Synthesis...');
 
   const attempts = [
-    { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.3-70b-speculative' },
+    { provider: 'cerebras', model: 'llama3.1-8b-instant' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
@@ -444,9 +443,8 @@ export async function streamChat(fileId: string, message: string, history: any[]
       }
     } else {
       const attempts = [
-        { provider: 'cerebras', model: 'llama-3.3-70b' },
-        { provider: 'cerebras', model: 'llama-3.1-70b' },
-        { provider: 'cerebras', model: 'llama-3.1-8b' },
+        { provider: 'cerebras', model: 'llama-3.3-70b-speculative' },
+        { provider: 'cerebras', model: 'llama3.1-8b-instant' },
         { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
         { provider: 'groq', model: 'llama-3.3-70b-versatile' },
         { provider: 'groq', model: 'llama-3.1-8b-instant' }
@@ -585,9 +583,8 @@ export async function generateQuiz(fileId: string) {
   }
 
   const attempts = [
-    { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.3-70b-speculative' },
+    { provider: 'cerebras', model: 'llama3.1-8b-instant' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
@@ -697,9 +694,8 @@ export async function generateFlashcards(fileId: string) {
   }
 
   const attempts = [
-    { provider: 'cerebras', model: 'llama-3.3-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-70b' },
-    { provider: 'cerebras', model: 'llama-3.1-8b' },
+    { provider: 'cerebras', model: 'llama-3.3-70b-speculative' },
+    { provider: 'cerebras', model: 'llama3.1-8b-instant' },
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
     { provider: 'gemini', model: 'gemini-1.5-flash' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
@@ -816,7 +812,8 @@ export async function generateThreadTitle(userMessage: string, courseName: strin
   // 2. AI Fallback Chain (Gemini first for extreme reliability & speed, then Cerebras, then Groq)
   const attempts = [
     { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
-    { provider: 'cerebras', model: 'llama-3.3-70b' },
+    { provider: 'cerebras', model: 'llama-3.3-70b-speculative' },
+    { provider: 'cerebras', model: 'llama3.1-8b-instant' },
     { provider: 'groq', model: 'llama-3.1-8b-instant' }
   ];
 
